@@ -31,11 +31,11 @@
         app:layout_constraintBottom_toTopOf="@id/previewContainer"
         app:layout_constraintTop_toTopOf="parent">
 
-        <ImageView
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:src="@drawable/ic_sparkle"
-            app:tint="@color/accent_gemini_blue" />
+        <com.google.android.material.imageview.ShapeableImageView
+            android:layout_width="68dp"
+            android:layout_height="68dp"
+            android:src="@drawable/app_logo"
+            app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Full" />
 
         <TextView
             android:layout_width="wrap_content"
