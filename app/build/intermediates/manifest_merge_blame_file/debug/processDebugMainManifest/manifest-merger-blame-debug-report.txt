@@ -1,0 +1,206 @@
+1<?xml version="1.0" encoding="utf-8"?>
+2<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+3    package="com.mitaoe.shridhar202401040197"
+4    android:versionCode="1"
+5    android:versionName="1.0" >
+6
+7    <uses-sdk
+7-->INJECTED
+8        android:minSdkVersion="26"
+8-->INJECTED
+9        android:targetSdkVersion="34" />
+9-->INJECTED
+10
+11    <!-- Network Permissions for Cloud AI & Model Fetching -->
+12    <uses-permission android:name="android.permission.INTERNET" />
+12-->C:\Users\Shridhar\.gemini\antigravity\scratch\AIPersonalAssistant\app\src\main\AndroidManifest.xml:5:5-67
+12-->C:\Users\Shridhar\.gemini\antigravity\scratch\AIPersonalAssistant\app\src\main\AndroidManifest.xml:5:22-64
+13    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+13-->C:\Users\Shridhar\.gemini\antigravity\scratch\AIPersonalAssistant\app\src\main\AndroidManifest.xml:6:5-79
+13-->C:\Users\Shridhar\.gemini\antigravity\scratch\AIPersonalAssistant\app\src\main\AndroidManifest.xml:6:22-76
+14
+15    <!-- Audio / Voice Assistant Permissions -->
+16    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+16-->C:\Users\Shridhar\.gemini\antigravity\scratch\AIPersonalAssistant\app\src\main\AndroidManifest.xml:9:5-71
+16-->C:\Users\Shridhar\.gemini\antigravity\scratch\AIPersonalAssistant\app\src\main\AndroidManifest.xml:9:22-68
+17
+18    <!-- Alarms, Reminders & Notifications -->
+19    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+19-->C:\Users\Shridhar\.gemini\antigravity\scratch\AIPersonalAssistant\app\src\main\AndroidManifest.xml:12:5-77
+19-->C:\Users\Shridhar\.gemini\antigravity\scratch\AIPersonalAssistant\app\src\main\AndroidManifest.xml:12:22-74
+20    <uses-permission android:name="android.permission.VIBRATE" />
+20-->C:\Users\Shridhar\.gemini\antigravity\scratch\AIPersonalAssistant\app\src\main\AndroidManifest.xml:13:5-66
+20-->C:\Users\Shridhar\.gemini\antigravity\scratch\AIPersonalAssistant\app\src\main\AndroidManifest.xml:13:22-63
+21    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+21-->C:\Users\Shridhar\.gemini\antigravity\scratch\AIPersonalAssistant\app\src\main\AndroidManifest.xml:14:5-79
+21-->C:\Users\Shridhar\.gemini\antigravity\scratch\AIPersonalAssistant\app\src\main\AndroidManifest.xml:14:22-76
+22    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+22-->C:\Users\Shridhar\.gemini\antigravity\scratch\AIPersonalAssistant\app\src\main\AndroidManifest.xml:15:5-81
+22-->C:\Users\Shridhar\.gemini\antigravity\scratch\AIPersonalAssistant\app\src\main\AndroidManifest.xml:15:22-78
+23
+24    <permission
+24-->[androidx.core:core:1.16.0] C:\Users\Shridhar\.gradle\caches\9.6.0\transforms\05b29fc856a026fb4c44fd3f96ddf7bc\transformed\core-1.16.0\AndroidManifest.xml:22:5-24:47
+25        android:name="com.mitaoe.shridhar202401040197.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
+25-->[androidx.core:core:1.16.0] C:\Users\Shridhar\.gradle\caches\9.6.0\transforms\05b29fc856a026fb4c44fd3f96ddf7bc\transformed\core-1.16.0\AndroidManifest.xml:23:9-81
+26        android:protectionLevel="signature" />
+26-->[androidx.core:core:1.16.0] C:\Users\Shridhar\.gradle\caches\9.6.0\transforms\05b29fc856a026fb4c44fd3f96ddf7bc\transformed\core-1.16.0\AndroidManifest.xml:24:9-44
+27
+28    <uses-permission android:name="com.mitaoe.shridhar202401040197.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION" />
+28-->[androidx.core:core:1.16.0] C:\Users\Shridhar\.gradle\caches\9.6.0\transforms\05b29fc856a026fb4c44fd3f96ddf7bc\transformed\core-1.16.0\AndroidManifest.xml:26:5-97
+28-->[androidx.core:core:1.16.0] C:\Users\Shridhar\.gradle\caches\9.6.0\transforms\05b29fc856a026fb4c44fd3f96ddf7bc\transformed\core-1.16.0\AndroidManifest.xml:26:22-94
+29
+30    <application
+30-->C:\Users\Shridhar\.gemini\antigravity\scratch\AIPersonalAssistant\app\src\main\AndroidManifest.xml:17:5-59:19
+31        android:allowBackup="true"
+31-->C:\Users\Shridhar\.gemini\antigravity\scratch\AIPersonalAssistant\app\src\main\AndroidManifest.xml:18:9-35
+32        android:appComponentFactory="androidx.core.app.CoreComponentFactory"
+32-->[androidx.core:core:1.16.0] C:\Users\Shridhar\.gradle\caches\9.6.0\transforms\05b29fc856a026fb4c44fd3f96ddf7bc\transformed\core-1.16.0\AndroidManifest.xml:28:18-86
+33        android:debuggable="true"
+34        android:extractNativeLibs="false"
+34-->INJECTED
+35        android:icon="@mipmap/ic_launcher"
+35-->C:\Users\Shridhar\.gemini\antigravity\scratch\AIPersonalAssistant\app\src\main\AndroidManifest.xml:19:9-43
+36        android:label="@string/app_name"
+36-->C:\Users\Shridhar\.gemini\antigravity\scratch\AIPersonalAssistant\app\src\main\AndroidManifest.xml:20:9-41
+37        android:roundIcon="@mipmap/ic_launcher_round"
+37-->C:\Users\Shridhar\.gemini\antigravity\scratch\AIPersonalAssistant\app\src\main\AndroidManifest.xml:21:9-54
+38        android:supportsRtl="true"
+38-->C:\Users\Shridhar\.gemini\antigravity\scratch\AIPersonalAssistant\app\src\main\AndroidManifest.xml:22:9-35
+39        android:theme="@style/Theme.AIPersonalAssistant" >
+39-->C:\Users\Shridhar\.gemini\antigravity\scratch\AIPersonalAssistant\app\src\main\AndroidManifest.xml:23:9-57
+40
+41        <!-- Main Launcher Activity -->
+42        <activity
+42-->C:\Users\Shridhar\.gemini\antigravity\scratch\AIPersonalAssistant\app\src\main\AndroidManifest.xml:26:9-34:20
+43            android:name="com.mitaoe.shridhar202401040197.MainActivity"
+43-->C:\Users\Shridhar\.gemini\antigravity\scratch\AIPersonalAssistant\app\src\main\AndroidManifest.xml:27:13-72
+44            android:exported="true"
+44-->C:\Users\Shridhar\.gemini\antigravity\scratch\AIPersonalAssistant\app\src\main\AndroidManifest.xml:28:13-36
+45            android:windowSoftInputMode="adjustResize" >
+45-->C:\Users\Shridhar\.gemini\antigravity\scratch\AIPersonalAssistant\app\src\main\AndroidManifest.xml:29:13-55
+46            <intent-filter>
+46-->C:\Users\Shridhar\.gemini\antigravity\scratch\AIPersonalAssistant\app\src\main\AndroidManifest.xml:30:13-33:29
+47                <action android:name="android.intent.action.MAIN" />
+47-->C:\Users\Shridhar\.gemini\antigravity\scratch\AIPersonalAssistant\app\src\main\AndroidManifest.xml:31:17-69
+47-->C:\Users\Shridhar\.gemini\antigravity\scratch\AIPersonalAssistant\app\src\main\AndroidManifest.xml:31:25-66
+48
+49                <category android:name="android.intent.category.LAUNCHER" />
+49-->C:\Users\Shridhar\.gemini\antigravity\scratch\AIPersonalAssistant\app\src\main\AndroidManifest.xml:32:17-77
+49-->C:\Users\Shridhar\.gemini\antigravity\scratch\AIPersonalAssistant\app\src\main\AndroidManifest.xml:32:27-74
+50            </intent-filter>
+51        </activity>
+52
+53        <!-- Note Editor Activity -->
+54        <activity
+54-->C:\Users\Shridhar\.gemini\antigravity\scratch\AIPersonalAssistant\app\src\main\AndroidManifest.xml:37:9-40:58
+55            android:name="com.mitaoe.shridhar202401040197.ui.notes.NoteEditActivity"
+55-->C:\Users\Shridhar\.gemini\antigravity\scratch\AIPersonalAssistant\app\src\main\AndroidManifest.xml:38:13-85
+56            android:exported="false"
+56-->C:\Users\Shridhar\.gemini\antigravity\scratch\AIPersonalAssistant\app\src\main\AndroidManifest.xml:39:13-37
+57            android:windowSoftInputMode="adjustResize" />
+57-->C:\Users\Shridhar\.gemini\antigravity\scratch\AIPersonalAssistant\app\src\main\AndroidManifest.xml:40:13-55
+58
+59        <!-- Broadcast Receivers for Scheduled Alarms & Notification Actions -->
+60        <receiver
+60-->C:\Users\Shridhar\.gemini\antigravity\scratch\AIPersonalAssistant\app\src\main\AndroidManifest.xml:43:9-45:40
+61            android:name="com.mitaoe.shridhar202401040197.receiver.AlarmReceiver"
+61-->C:\Users\Shridhar\.gemini\antigravity\scratch\AIPersonalAssistant\app\src\main\AndroidManifest.xml:44:13-82
+62            android:exported="false" />
+62-->C:\Users\Shridhar\.gemini\antigravity\scratch\AIPersonalAssistant\app\src\main\AndroidManifest.xml:45:13-37
+63        <receiver
+63-->C:\Users\Shridhar\.gemini\antigravity\scratch\AIPersonalAssistant\app\src\main\AndroidManifest.xml:47:9-49:40
+64            android:name="com.mitaoe.shridhar202401040197.receiver.NotificationActionReceiver"
+64-->C:\Users\Shridhar\.gemini\antigravity\scratch\AIPersonalAssistant\app\src\main\AndroidManifest.xml:48:13-95
+65            android:exported="false" />
+65-->C:\Users\Shridhar\.gemini\antigravity\scratch\AIPersonalAssistant\app\src\main\AndroidManifest.xml:49:13-37
+66        <receiver
+66-->C:\Users\Shridhar\.gemini\antigravity\scratch\AIPersonalAssistant\app\src\main\AndroidManifest.xml:51:9-57:20
+67            android:name="com.mitaoe.shridhar202401040197.receiver.BootReceiver"
+67-->C:\Users\Shridhar\.gemini\antigravity\scratch\AIPersonalAssistant\app\src\main\AndroidManifest.xml:52:13-81
+68            android:exported="true" >
+68-->C:\Users\Shridhar\.gemini\antigravity\scratch\AIPersonalAssistant\app\src\main\AndroidManifest.xml:53:13-36
+69            <intent-filter>
+69-->C:\Users\Shridhar\.gemini\antigravity\scratch\AIPersonalAssistant\app\src\main\AndroidManifest.xml:54:13-56:29
+70                <action android:name="android.intent.action.BOOT_COMPLETED" />
+70-->C:\Users\Shridhar\.gemini\antigravity\scratch\AIPersonalAssistant\app\src\main\AndroidManifest.xml:55:17-79
+70-->C:\Users\Shridhar\.gemini\antigravity\scratch\AIPersonalAssistant\app\src\main\AndroidManifest.xml:55:25-76
+71            </intent-filter>
+72        </receiver>
+73
+74        <provider
+74-->[androidx.emoji2:emoji2:1.3.0] C:\Users\Shridhar\.gradle\caches\9.6.0\transforms\bc7fcfa5471e85abc122cf974b2bba06\transformed\emoji2-1.3.0\AndroidManifest.xml:24:9-32:20
+75            android:name="androidx.startup.InitializationProvider"
+75-->[androidx.emoji2:emoji2:1.3.0] C:\Users\Shridhar\.gradle\caches\9.6.0\transforms\bc7fcfa5471e85abc122cf974b2bba06\transformed\emoji2-1.3.0\AndroidManifest.xml:25:13-67
+76            android:authorities="com.mitaoe.shridhar202401040197.androidx-startup"
+76-->[androidx.emoji2:emoji2:1.3.0] C:\Users\Shridhar\.gradle\caches\9.6.0\transforms\bc7fcfa5471e85abc122cf974b2bba06\transformed\emoji2-1.3.0\AndroidManifest.xml:26:13-68
+77            android:exported="false" >
+77-->[androidx.emoji2:emoji2:1.3.0] C:\Users\Shridhar\.gradle\caches\9.6.0\transforms\bc7fcfa5471e85abc122cf974b2bba06\transformed\emoji2-1.3.0\AndroidManifest.xml:27:13-37
+78            <meta-data
+78-->[androidx.emoji2:emoji2:1.3.0] C:\Users\Shridhar\.gradle\caches\9.6.0\transforms\bc7fcfa5471e85abc122cf974b2bba06\transformed\emoji2-1.3.0\AndroidManifest.xml:29:13-31:52
+79                android:name="androidx.emoji2.text.EmojiCompatInitializer"
+79-->[androidx.emoji2:emoji2:1.3.0] C:\Users\Shridhar\.gradle\caches\9.6.0\transforms\bc7fcfa5471e85abc122cf974b2bba06\transformed\emoji2-1.3.0\AndroidManifest.xml:30:17-75
+80                android:value="androidx.startup" />
+80-->[androidx.emoji2:emoji2:1.3.0] C:\Users\Shridhar\.gradle\caches\9.6.0\transforms\bc7fcfa5471e85abc122cf974b2bba06\transformed\emoji2-1.3.0\AndroidManifest.xml:31:17-49
+81            <meta-data
+81-->[androidx.lifecycle:lifecycle-process:2.8.7] C:\Users\Shridhar\.gradle\caches\9.6.0\transforms\84d057c680a0b7c7ce16865822b82618\transformed\lifecycle-process-2.8.7\AndroidManifest.xml:29:13-31:52
+82                android:name="androidx.lifecycle.ProcessLifecycleInitializer"
+82-->[androidx.lifecycle:lifecycle-process:2.8.7] C:\Users\Shridhar\.gradle\caches\9.6.0\transforms\84d057c680a0b7c7ce16865822b82618\transformed\lifecycle-process-2.8.7\AndroidManifest.xml:30:17-78
+83                android:value="androidx.startup" />
+83-->[androidx.lifecycle:lifecycle-process:2.8.7] C:\Users\Shridhar\.gradle\caches\9.6.0\transforms\84d057c680a0b7c7ce16865822b82618\transformed\lifecycle-process-2.8.7\AndroidManifest.xml:31:17-49
+84            <meta-data
+84-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\Shridhar\.gradle\caches\9.6.0\transforms\2a7fdb7d23db83720ba7b4bcdcf6d2e2\transformed\profileinstaller-1.4.0\AndroidManifest.xml:29:13-31:52
+85                android:name="androidx.profileinstaller.ProfileInstallerInitializer"
+85-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\Shridhar\.gradle\caches\9.6.0\transforms\2a7fdb7d23db83720ba7b4bcdcf6d2e2\transformed\profileinstaller-1.4.0\AndroidManifest.xml:30:17-85
+86                android:value="androidx.startup" />
+86-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\Shridhar\.gradle\caches\9.6.0\transforms\2a7fdb7d23db83720ba7b4bcdcf6d2e2\transformed\profileinstaller-1.4.0\AndroidManifest.xml:31:17-49
+87        </provider>
+88
+89        <service
+89-->[androidx.room:room-runtime:2.6.1] C:\Users\Shridhar\.gradle\caches\9.6.0\transforms\29db7da195fa50a3d4fc3b04429c0059\transformed\room-runtime-2.6.1\AndroidManifest.xml:24:9-28:63
+90            android:name="androidx.room.MultiInstanceInvalidationService"
+90-->[androidx.room:room-runtime:2.6.1] C:\Users\Shridhar\.gradle\caches\9.6.0\transforms\29db7da195fa50a3d4fc3b04429c0059\transformed\room-runtime-2.6.1\AndroidManifest.xml:25:13-74
+91            android:directBootAware="true"
+91-->[androidx.room:room-runtime:2.6.1] C:\Users\Shridhar\.gradle\caches\9.6.0\transforms\29db7da195fa50a3d4fc3b04429c0059\transformed\room-runtime-2.6.1\AndroidManifest.xml:26:13-43
+92            android:exported="false" />
+92-->[androidx.room:room-runtime:2.6.1] C:\Users\Shridhar\.gradle\caches\9.6.0\transforms\29db7da195fa50a3d4fc3b04429c0059\transformed\room-runtime-2.6.1\AndroidManifest.xml:27:13-37
+93
+94        <receiver
+94-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\Shridhar\.gradle\caches\9.6.0\transforms\2a7fdb7d23db83720ba7b4bcdcf6d2e2\transformed\profileinstaller-1.4.0\AndroidManifest.xml:34:9-52:20
+95            android:name="androidx.profileinstaller.ProfileInstallReceiver"
+95-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\Shridhar\.gradle\caches\9.6.0\transforms\2a7fdb7d23db83720ba7b4bcdcf6d2e2\transformed\profileinstaller-1.4.0\AndroidManifest.xml:35:13-76
+96            android:directBootAware="false"
+96-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\Shridhar\.gradle\caches\9.6.0\transforms\2a7fdb7d23db83720ba7b4bcdcf6d2e2\transformed\profileinstaller-1.4.0\AndroidManifest.xml:36:13-44
+97            android:enabled="true"
+97-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\Shridhar\.gradle\caches\9.6.0\transforms\2a7fdb7d23db83720ba7b4bcdcf6d2e2\transformed\profileinstaller-1.4.0\AndroidManifest.xml:37:13-35
+98            android:exported="true"
+98-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\Shridhar\.gradle\caches\9.6.0\transforms\2a7fdb7d23db83720ba7b4bcdcf6d2e2\transformed\profileinstaller-1.4.0\AndroidManifest.xml:38:13-36
+99            android:permission="android.permission.DUMP" >
+99-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\Shridhar\.gradle\caches\9.6.0\transforms\2a7fdb7d23db83720ba7b4bcdcf6d2e2\transformed\profileinstaller-1.4.0\AndroidManifest.xml:39:13-57
+100            <intent-filter>
+100-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\Shridhar\.gradle\caches\9.6.0\transforms\2a7fdb7d23db83720ba7b4bcdcf6d2e2\transformed\profileinstaller-1.4.0\AndroidManifest.xml:40:13-42:29
+101                <action android:name="androidx.profileinstaller.action.INSTALL_PROFILE" />
+101-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\Shridhar\.gradle\caches\9.6.0\transforms\2a7fdb7d23db83720ba7b4bcdcf6d2e2\transformed\profileinstaller-1.4.0\AndroidManifest.xml:41:17-91
+101-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\Shridhar\.gradle\caches\9.6.0\transforms\2a7fdb7d23db83720ba7b4bcdcf6d2e2\transformed\profileinstaller-1.4.0\AndroidManifest.xml:41:25-88
+102            </intent-filter>
+103            <intent-filter>
+103-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\Shridhar\.gradle\caches\9.6.0\transforms\2a7fdb7d23db83720ba7b4bcdcf6d2e2\transformed\profileinstaller-1.4.0\AndroidManifest.xml:43:13-45:29
+104                <action android:name="androidx.profileinstaller.action.SKIP_FILE" />
+104-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\Shridhar\.gradle\caches\9.6.0\transforms\2a7fdb7d23db83720ba7b4bcdcf6d2e2\transformed\profileinstaller-1.4.0\AndroidManifest.xml:44:17-85
+104-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\Shridhar\.gradle\caches\9.6.0\transforms\2a7fdb7d23db83720ba7b4bcdcf6d2e2\transformed\profileinstaller-1.4.0\AndroidManifest.xml:44:25-82
+105            </intent-filter>
+106            <intent-filter>
+106-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\Shridhar\.gradle\caches\9.6.0\transforms\2a7fdb7d23db83720ba7b4bcdcf6d2e2\transformed\profileinstaller-1.4.0\AndroidManifest.xml:46:13-48:29
+107                <action android:name="androidx.profileinstaller.action.SAVE_PROFILE" />
+107-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\Shridhar\.gradle\caches\9.6.0\transforms\2a7fdb7d23db83720ba7b4bcdcf6d2e2\transformed\profileinstaller-1.4.0\AndroidManifest.xml:47:17-88
+107-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\Shridhar\.gradle\caches\9.6.0\transforms\2a7fdb7d23db83720ba7b4bcdcf6d2e2\transformed\profileinstaller-1.4.0\AndroidManifest.xml:47:25-85
+108            </intent-filter>
+109            <intent-filter>
+109-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\Shridhar\.gradle\caches\9.6.0\transforms\2a7fdb7d23db83720ba7b4bcdcf6d2e2\transformed\profileinstaller-1.4.0\AndroidManifest.xml:49:13-51:29
+110                <action android:name="androidx.profileinstaller.action.BENCHMARK_OPERATION" />
+110-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\Shridhar\.gradle\caches\9.6.0\transforms\2a7fdb7d23db83720ba7b4bcdcf6d2e2\transformed\profileinstaller-1.4.0\AndroidManifest.xml:50:17-95
+110-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\Shridhar\.gradle\caches\9.6.0\transforms\2a7fdb7d23db83720ba7b4bcdcf6d2e2\transformed\profileinstaller-1.4.0\AndroidManifest.xml:50:25-92
+111            </intent-filter>
+112        </receiver>
+113    </application>
+114
+115</manifest>

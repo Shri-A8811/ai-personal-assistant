@@ -68,19 +68,19 @@ public class MainActivity extends AppCompatActivity {
         bottomNav.setOnItemSelectedListener(item -> {
             int itemId = item.getItemId();
             if (itemId == R.id.nav_chat) {
-                switchFragment(new ChatFragment());
+                switchTab("chat");
                 btnModelPill.setVisibility(View.VISIBLE);
                 return true;
             } else if (itemId == R.id.nav_tasks) {
-                switchFragment(new TasksFragment());
+                switchTab("tasks");
                 btnModelPill.setVisibility(View.GONE);
                 return true;
             } else if (itemId == R.id.nav_notes) {
-                switchFragment(new NotesFragment());
+                switchTab("notes");
                 btnModelPill.setVisibility(View.GONE);
                 return true;
             } else if (itemId == R.id.nav_dashboard) {
-                switchFragment(new DashboardFragment());
+                switchTab("dashboard");
                 btnModelPill.setVisibility(View.GONE);
                 return true;
             }
@@ -89,17 +89,42 @@ public class MainActivity extends AppCompatActivity {
 
         // Default screen is Chat
         if (savedInstanceState == null) {
-            switchFragment(new ChatFragment());
+            switchTab("chat");
         }
 
         // Request notification permission on Android 13+
         checkNotificationPermission();
     }
 
-    private void switchFragment(Fragment fragment) {
-        getSupportFragmentManager().beginTransaction()
-                .replace(R.id.fragment_container, fragment)
-                .commit();
+    private String currentTab = "";
+
+    private void switchTab(String tag) {
+        if (tag.equals(currentTab)) return;
+
+        androidx.fragment.app.FragmentManager fm = getSupportFragmentManager();
+        androidx.fragment.app.FragmentTransaction transaction = fm.beginTransaction();
+
+        Fragment currentFrag = fm.findFragmentByTag(currentTab);
+        if (currentFrag != null) {
+            transaction.hide(currentFrag);
+        }
+
+        Fragment targetFrag = fm.findFragmentByTag(tag);
+        if (targetFrag == null) {
+            switch (tag) {
+                case "chat": targetFrag = new ChatFragment(); break;
+                case "tasks": targetFrag = new TasksFragment(); break;
+                case "notes": targetFrag = new NotesFragment(); break;
+                case "dashboard": targetFrag = new DashboardFragment(); break;
+                default: targetFrag = new ChatFragment(); break;
+            }
+            transaction.add(R.id.fragment_container, targetFrag, tag);
+        } else {
+            transaction.show(targetFrag);
+        }
+
+        transaction.commit();
+        currentTab = tag;
     }
 
     public void updateModelPillLabel() {

@@ -1,0 +1,20 @@
+{
+    "logs": [
+        {
+            "outputFile": "com.mitaoe.shridhar202401040197.app-mergeDebugResources-1:/values-watch-v21/values-watch-v21.xml",
+            "map": [
+                {
+                    "source": "C:\\Users\\Shridhar\\.gradle\\caches\\9.6.0\\transforms\\f9684c59e8ee77ef3707ab808481f1e1\\transformed\\appcompat-1.8.0\\res\\values-watch-v21\\values-watch-v21.xml",
+                    "from": {
+                        "startLines": "2,6,10",
+                        "startColumns": "4,4,4",
+                        "startOffsets": "55,271,499",
+                        "endLines": "5,9,13",
+                        "endColumns": "12,12,12",
+                        "endOffsets": "266,494,724"
+                    }
+                }
+            ]
+        }
+    ]
+}

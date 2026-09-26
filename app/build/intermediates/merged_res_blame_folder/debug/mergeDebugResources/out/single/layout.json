@@ -1,0 +1,62 @@
+[
+    {
+        "merged": "com.mitaoe.shridhar202401040197.app-mergeDebugResources-2:/layout/fragment_chat.xml",
+        "source": "com.mitaoe.shridhar202401040197.app-main-5:/layout/fragment_chat.xml"
+    },
+    {
+        "merged": "com.mitaoe.shridhar202401040197.app-mergeDebugResources-2:/layout/item_task.xml",
+        "source": "com.mitaoe.shridhar202401040197.app-main-5:/layout/item_task.xml"
+    },
+    {
+        "merged": "com.mitaoe.shridhar202401040197.app-mergeDebugResources-2:/layout/item_pinned_model_setting.xml",
+        "source": "com.mitaoe.shridhar202401040197.app-main-5:/layout/item_pinned_model_setting.xml"
+    },
+    {
+        "merged": "com.mitaoe.shridhar202401040197.app-mergeDebugResources-2:/layout/fragment_dashboard.xml",
+        "source": "com.mitaoe.shridhar202401040197.app-main-5:/layout/fragment_dashboard.xml"
+    },
+    {
+        "merged": "com.mitaoe.shridhar202401040197.app-mergeDebugResources-2:/layout/fragment_notes.xml",
+        "source": "com.mitaoe.shridhar202401040197.app-main-5:/layout/fragment_notes.xml"
+    },
+    {
+        "merged": "com.mitaoe.shridhar202401040197.app-mergeDebugResources-2:/layout/item_model_selector.xml",
+        "source": "com.mitaoe.shridhar202401040197.app-main-5:/layout/item_model_selector.xml"
+    },
+    {
+        "merged": "com.mitaoe.shridhar202401040197.app-mergeDebugResources-2:/layout/dialog_settings.xml",
+        "source": "com.mitaoe.shridhar202401040197.app-main-5:/layout/dialog_settings.xml"
+    },
+    {
+        "merged": "com.mitaoe.shridhar202401040197.app-mergeDebugResources-2:/layout/fragment_tasks.xml",
+        "source": "com.mitaoe.shridhar202401040197.app-main-5:/layout/fragment_tasks.xml"
+    },
+    {
+        "merged": "com.mitaoe.shridhar202401040197.app-mergeDebugResources-2:/layout/activity_note_edit.xml",
+        "source": "com.mitaoe.shridhar202401040197.app-main-5:/layout/activity_note_edit.xml"
+    },
+    {
+        "merged": "com.mitaoe.shridhar202401040197.app-mergeDebugResources-2:/layout/item_note.xml",
+        "source": "com.mitaoe.shridhar202401040197.app-main-5:/layout/item_note.xml"
+    },
+    {
+        "merged": "com.mitaoe.shridhar202401040197.app-mergeDebugResources-2:/layout/activity_main.xml",
+        "source": "com.mitaoe.shridhar202401040197.app-main-5:/layout/activity_main.xml"
+    },
+    {
+        "merged": "com.mitaoe.shridhar202401040197.app-mergeDebugResources-2:/layout/item_chat_user.xml",
+        "source": "com.mitaoe.shridhar202401040197.app-main-5:/layout/item_chat_user.xml"
+    },
+    {
+        "merged": "com.mitaoe.shridhar202401040197.app-mergeDebugResources-2:/layout/dialog_task_edit.xml",
+        "source": "com.mitaoe.shridhar202401040197.app-main-5:/layout/dialog_task_edit.xml"
+    },
+    {
+        "merged": "com.mitaoe.shridhar202401040197.app-mergeDebugResources-2:/layout/item_chat_assistant.xml",
+        "source": "com.mitaoe.shridhar202401040197.app-main-5:/layout/item_chat_assistant.xml"
+    },
+    {
+        "merged": "com.mitaoe.shridhar202401040197.app-mergeDebugResources-2:/layout/bottom_sheet_model_selector.xml",
+        "source": "com.mitaoe.shridhar202401040197.app-main-5:/layout/bottom_sheet_model_selector.xml"
+    }
+]

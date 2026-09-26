@@ -93,6 +93,33 @@ public class NoteEditActivity extends AppCompatActivity {
         });
     }
 
+    private AlertDialog createLoadingDialog(String message) {
+        android.widget.LinearLayout layout = new android.widget.LinearLayout(this);
+        layout.setOrientation(android.widget.LinearLayout.HORIZONTAL);
+        layout.setPadding(48, 36, 48, 36);
+        layout.setGravity(android.view.Gravity.CENTER_VERTICAL);
+
+        android.widget.ProgressBar bar = new android.widget.ProgressBar(this);
+        bar.setIndeterminate(true);
+        layout.addView(bar);
+
+        android.widget.TextView tv = new android.widget.TextView(this);
+        tv.setText("   " + message);
+        tv.setTextSize(14);
+        tv.setTextColor(androidx.core.content.ContextCompat.getColor(this, R.color.text_primary));
+        layout.addView(tv);
+
+        AlertDialog dialog = new AlertDialog.Builder(this)
+                .setView(layout)
+                .setCancelable(false)
+                .create();
+
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawableResource(R.drawable.bg_chat_assistant);
+        }
+        return dialog;
+    }
+
     private void runAiSummarize() {
         String text = editNoteContent.getText().toString().trim();
         if (text.isEmpty()) {
@@ -100,8 +127,7 @@ public class NoteEditActivity extends AppCompatActivity {
             return;
         }
 
-        ProgressDialog progress = new ProgressDialog(this);
-        progress.setMessage("✨ AI is summarizing note...");
+        AlertDialog progress = createLoadingDialog("✨ AI is summarizing note...");
         progress.show();
 
         String prompt = "Summarize this note in 2-3 concise bullet points:\n\n" + text;
@@ -111,21 +137,25 @@ public class NoteEditActivity extends AppCompatActivity {
 
             @Override
             public void onComplete(String fullResponse) {
-                progress.dismiss();
-                new AlertDialog.Builder(NoteEditActivity.this)
-                        .setTitle("✨ Note Summary")
-                        .setMessage(fullResponse)
-                        .setPositiveButton("Append to Note", (d, w) -> {
-                            editNoteContent.append("\n\n---\n**Summary:**\n" + fullResponse);
-                        })
-                        .setNegativeButton("Close", null)
-                        .show();
+                if (!isFinishing() && !isDestroyed()) {
+                    progress.dismiss();
+                    new AlertDialog.Builder(NoteEditActivity.this)
+                            .setTitle("✨ Note Summary")
+                            .setMessage(fullResponse)
+                            .setPositiveButton("Append to Note", (d, w) -> {
+                                editNoteContent.append("\n\n---\n**Summary:**\n" + fullResponse);
+                            })
+                            .setNegativeButton("Close", null)
+                            .show();
+                }
             }
 
             @Override
             public void onError(String errorMessage) {
-                progress.dismiss();
-                Toast.makeText(NoteEditActivity.this, "AI error: " + errorMessage, Toast.LENGTH_SHORT).show();
+                if (!isFinishing() && !isDestroyed()) {
+                    progress.dismiss();
+                    Toast.makeText(NoteEditActivity.this, "AI error: " + errorMessage, Toast.LENGTH_SHORT).show();
+                }
             }
         });
     }
@@ -137,8 +167,7 @@ public class NoteEditActivity extends AppCompatActivity {
             return;
         }
 
-        ProgressDialog progress = new ProgressDialog(this);
-        progress.setMessage("📋 AI is extracting action items...");
+        AlertDialog progress = createLoadingDialog("📋 AI is extracting action items...");
         progress.show();
 
         String prompt = "Extract all actionable tasks from this note as a numbered list (one task per line):\n\n" + text;
@@ -148,25 +177,28 @@ public class NoteEditActivity extends AppCompatActivity {
 
             @Override
             public void onComplete(String fullResponse) {
-                progress.dismiss();
-                // Add extracted lines into Tasks database
-                String[] lines = fullResponse.split("\n");
-                int added = 0;
-                for (String line : lines) {
-                    String clean = line.replaceAll("^[0-9]+[.\\-\\s]+", "").trim();
-                    if (!clean.isEmpty()) {
-                        TaskItem task = new TaskItem(clean, "Extracted from note: " + editNoteTitle.getText().toString(), 0, "MEDIUM", "From Notes", false);
-                        Executors.newSingleThreadExecutor().execute(() -> db.taskDao().insert(task));
-                        added++;
+                if (!isFinishing() && !isDestroyed()) {
+                    progress.dismiss();
+                    String[] lines = fullResponse.split("\n");
+                    int added = 0;
+                    for (String line : lines) {
+                        String clean = line.replaceAll("^[0-9]+[.\\-\\s]+", "").trim();
+                        if (!clean.isEmpty()) {
+                            TaskItem task = new TaskItem(clean, "Extracted from note: " + editNoteTitle.getText().toString(), 0, "MEDIUM", "From Notes", false);
+                            Executors.newSingleThreadExecutor().execute(() -> db.taskDao().insert(task));
+                            added++;
+                        }
                     }
+                    Toast.makeText(NoteEditActivity.this, "Created " + added + " tasks from this note! ✅", Toast.LENGTH_LONG).show();
                 }
-                Toast.makeText(NoteEditActivity.this, "Created " + added + " tasks from this note! ✅", Toast.LENGTH_LONG).show();
             }
 
             @Override
             public void onError(String errorMessage) {
-                progress.dismiss();
-                Toast.makeText(NoteEditActivity.this, "Error: " + errorMessage, Toast.LENGTH_SHORT).show();
+                if (!isFinishing() && !isDestroyed()) {
+                    progress.dismiss();
+                    Toast.makeText(NoteEditActivity.this, "Error: " + errorMessage, Toast.LENGTH_SHORT).show();
+                }
             }
         });
     }
@@ -178,8 +210,7 @@ public class NoteEditActivity extends AppCompatActivity {
             return;
         }
 
-        ProgressDialog progress = new ProgressDialog(this);
-        progress.setMessage("✍️ AI is polishing your note...");
+        AlertDialog progress = createLoadingDialog("✍️ AI is polishing your note...");
         progress.show();
 
         String prompt = "Rewrite and polish this note text to improve grammar, clarity, and formatting without changing its meaning:\n\n" + text;
@@ -189,15 +220,19 @@ public class NoteEditActivity extends AppCompatActivity {
 
             @Override
             public void onComplete(String fullResponse) {
-                progress.dismiss();
-                editNoteContent.setText(fullResponse);
-                Toast.makeText(NoteEditActivity.this, "Note polished! ✨", Toast.LENGTH_SHORT).show();
+                if (!isFinishing() && !isDestroyed()) {
+                    progress.dismiss();
+                    editNoteContent.setText(fullResponse);
+                    Toast.makeText(NoteEditActivity.this, "Note polished! ✨", Toast.LENGTH_SHORT).show();
+                }
             }
 
             @Override
             public void onError(String errorMessage) {
-                progress.dismiss();
-                Toast.makeText(NoteEditActivity.this, "Error: " + errorMessage, Toast.LENGTH_SHORT).show();
+                if (!isFinishing() && !isDestroyed()) {
+                    progress.dismiss();
+                    Toast.makeText(NoteEditActivity.this, "Error: " + errorMessage, Toast.LENGTH_SHORT).show();
+                }
             }
         });
     }
