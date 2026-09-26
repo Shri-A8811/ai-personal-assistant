@@ -7,10 +7,11 @@ import androidx.room.Room;
 import androidx.room.RoomDatabase;
 
 import com.mitaoe.shridhar202401040197.data.model.ChatMessage;
+import com.mitaoe.shridhar202401040197.data.model.Conversation;
 import com.mitaoe.shridhar202401040197.data.model.NoteItem;
 import com.mitaoe.shridhar202401040197.data.model.TaskItem;
 
-@Database(entities = {TaskItem.class, NoteItem.class, ChatMessage.class}, version = 1, exportSchema = false)
+@Database(entities = {TaskItem.class, NoteItem.class, ChatMessage.class, Conversation.class}, version = 2, exportSchema = false)
 public abstract class AppDatabase extends RoomDatabase {
 
     private static volatile AppDatabase INSTANCE;
@@ -18,6 +19,7 @@ public abstract class AppDatabase extends RoomDatabase {
     public abstract TaskDao taskDao();
     public abstract NoteDao noteDao();
     public abstract ChatDao chatDao();
+    public abstract ConversationDao conversationDao();
 
     public static AppDatabase getInstance(Context context) {
         if (INSTANCE == null) {

@@ -139,7 +139,8 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         public void bind(ChatMessage msg, OnSpeakListener listener) {
             txtAssistantModel.setText(msg.getModelName() != null ? msg.getModelName() : "Assistant");
             txtAssistantTime.setText(DateTimeUtil.formatTime(msg.getTimestamp()));
-            txtAssistantMessage.setText(msg.getText());
+            int codeColor = androidx.core.content.ContextCompat.getColor(itemView.getContext(), R.color.accent_sparkle);
+            txtAssistantMessage.setText(com.mitaoe.shridhar202401040197.util.MarkdownUtil.renderMarkdown(msg.getText(), codeColor));
 
             if (msg.isHasAction()) {
                 cardActionExecuted.setVisibility(View.VISIBLE);

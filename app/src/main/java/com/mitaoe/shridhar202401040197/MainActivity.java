@@ -13,28 +13,52 @@ import android.widget.Toast;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
+import androidx.core.view.GravityCompat;
+import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.fragment.app.Fragment;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.bottomnavigation.BottomNavigationView;
+import com.google.android.material.button.MaterialButton;
+import com.mitaoe.shridhar202401040197.data.database.AppDatabase;
 import com.mitaoe.shridhar202401040197.data.model.AiModel;
+import com.mitaoe.shridhar202401040197.data.model.Conversation;
 import com.mitaoe.shridhar202401040197.data.preference.PreferenceManager;
 import com.mitaoe.shridhar202401040197.service.NotificationHelper;
 import com.mitaoe.shridhar202401040197.ui.chat.ChatFragment;
+import com.mitaoe.shridhar202401040197.ui.chat.ConversationDrawerAdapter;
 import com.mitaoe.shridhar202401040197.ui.chat.ModelSelectorBottomSheet;
 import com.mitaoe.shridhar202401040197.ui.dashboard.DashboardFragment;
 import com.mitaoe.shridhar202401040197.ui.notes.NotesFragment;
 import com.mitaoe.shridhar202401040197.ui.settings.SettingsBottomSheet;
 import com.mitaoe.shridhar202401040197.ui.tasks.TasksFragment;
 
+import java.util.concurrent.Executors;
+
 public class MainActivity extends AppCompatActivity {
 
     private PreferenceManager prefManager;
+    private AppDatabase db;
+
+    private DrawerLayout drawerLayout;
     private TextView txtCurrentModel;
     private LinearLayout btnModelPill;
-    private ImageView btnSettings;
+    private ImageView btnDrawer, btnTopNewChat, btnSettings;
     private BottomNavigationView bottomNav;
+
+    // Drawer Views
+    private RecyclerView recyclerDrawerConversations;
+    private TextView txtDrawerNoChats;
+    private MaterialButton btnDrawerNewChat;
+    private ImageView btnCloseDrawer;
+    private LinearLayout btnDrawerSettings;
+    private ConversationDrawerAdapter drawerAdapter;
+
+    private String currentTab = "";
 
     private final ActivityResultLauncher<String> notificationPermissionLauncher =
             registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted -> {
@@ -49,14 +73,26 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         prefManager = new PreferenceManager(this);
+        db = AppDatabase.getInstance(this);
         NotificationHelper.createNotificationChannel(this);
 
+        drawerLayout = findViewById(R.id.drawerLayout);
         txtCurrentModel = findViewById(R.id.txtCurrentModel);
         btnModelPill = findViewById(R.id.btnModelPill);
+        btnDrawer = findViewById(R.id.btnDrawer);
+        btnTopNewChat = findViewById(R.id.btnTopNewChat);
         btnSettings = findViewById(R.id.btnSettings);
         bottomNav = findViewById(R.id.bottom_navigation);
 
+        setupDrawer();
+
         updateModelPillLabel();
+
+        // Hamburger Menu click opens previous chats drawer
+        btnDrawer.setOnClickListener(v -> drawerLayout.openDrawer(GravityCompat.START));
+
+        // Start New Chat from top icon
+        btnTopNewChat.setOnClickListener(v -> handleStartNewChat());
 
         // Model Switcher Pill click
         btnModelPill.setOnClickListener(v -> showModelSelectorBottomSheet());
@@ -70,18 +106,22 @@ public class MainActivity extends AppCompatActivity {
             if (itemId == R.id.nav_chat) {
                 switchTab("chat");
                 btnModelPill.setVisibility(View.VISIBLE);
+                btnTopNewChat.setVisibility(View.VISIBLE);
                 return true;
             } else if (itemId == R.id.nav_tasks) {
                 switchTab("tasks");
                 btnModelPill.setVisibility(View.GONE);
+                btnTopNewChat.setVisibility(View.GONE);
                 return true;
             } else if (itemId == R.id.nav_notes) {
                 switchTab("notes");
                 btnModelPill.setVisibility(View.GONE);
+                btnTopNewChat.setVisibility(View.GONE);
                 return true;
             } else if (itemId == R.id.nav_dashboard) {
                 switchTab("dashboard");
                 btnModelPill.setVisibility(View.GONE);
+                btnTopNewChat.setVisibility(View.GONE);
                 return true;
             }
             return false;
@@ -92,11 +132,91 @@ public class MainActivity extends AppCompatActivity {
             switchTab("chat");
         }
 
-        // Request notification permission on Android 13+
         checkNotificationPermission();
     }
 
-    private String currentTab = "";
+    private void setupDrawer() {
+        View drawerHeader = findViewById(R.id.drawerContent);
+        if (drawerHeader == null) return;
+
+        recyclerDrawerConversations = drawerHeader.findViewById(R.id.recyclerDrawerConversations);
+        txtDrawerNoChats = drawerHeader.findViewById(R.id.txtDrawerNoChats);
+        btnDrawerNewChat = drawerHeader.findViewById(R.id.btnDrawerNewChat);
+        btnCloseDrawer = drawerHeader.findViewById(R.id.btnCloseDrawer);
+        btnDrawerSettings = drawerHeader.findViewById(R.id.btnDrawerSettings);
+
+        recyclerDrawerConversations.setLayoutManager(new LinearLayoutManager(this));
+        drawerAdapter = new ConversationDrawerAdapter(new ConversationDrawerAdapter.OnConversationClickListener() {
+            @Override
+            public void onConversationClick(Conversation conversation) {
+                drawerLayout.closeDrawer(GravityCompat.START);
+                if (!"chat".equals(currentTab)) {
+                    bottomNav.setSelectedItemId(R.id.nav_chat);
+                }
+                Fragment frag = getSupportFragmentManager().findFragmentByTag("chat");
+                if (frag instanceof ChatFragment) {
+                    ((ChatFragment) frag).loadConversation(conversation.getId());
+                }
+            }
+
+            @Override
+            public void onConversationDelete(Conversation conversation) {
+                new AlertDialog.Builder(MainActivity.this)
+                        .setTitle("Delete Conversation")
+                        .setMessage("Delete \"" + conversation.getTitle() + "\" and its chat history?")
+                        .setPositiveButton("Delete", (d, w) -> {
+                            Executors.newSingleThreadExecutor().execute(() -> {
+                                db.conversationDao().deleteMessagesForConversation(conversation.getId());
+                                db.conversationDao().delete(conversation);
+                            });
+                            Fragment frag = getSupportFragmentManager().findFragmentByTag("chat");
+                            if (frag instanceof ChatFragment) {
+                                ((ChatFragment) frag).startNewChat();
+                            }
+                        })
+                        .setNegativeButton("Cancel", null)
+                        .show();
+            }
+        });
+        recyclerDrawerConversations.setAdapter(drawerAdapter);
+
+        // Observe Conversations in Real Time
+        db.conversationDao().getAllConversations().observe(this, conversations -> {
+            if (conversations != null && !conversations.isEmpty()) {
+                drawerAdapter.setConversations(conversations, -1);
+                recyclerDrawerConversations.setVisibility(View.VISIBLE);
+                txtDrawerNoChats.setVisibility(View.GONE);
+            } else {
+                drawerAdapter.setConversations(conversations, -1);
+                recyclerDrawerConversations.setVisibility(View.GONE);
+                txtDrawerNoChats.setVisibility(View.VISIBLE);
+            }
+        });
+
+        btnDrawerNewChat.setOnClickListener(v -> handleStartNewChat());
+        btnCloseDrawer.setOnClickListener(v -> drawerLayout.closeDrawer(GravityCompat.START));
+        btnDrawerSettings.setOnClickListener(v -> {
+            drawerLayout.closeDrawer(GravityCompat.START);
+            showSettingsBottomSheet();
+        });
+    }
+
+    private void handleStartNewChat() {
+        drawerLayout.closeDrawer(GravityCompat.START);
+        if (!"chat".equals(currentTab)) {
+            bottomNav.setSelectedItemId(R.id.nav_chat);
+        }
+        Fragment frag = getSupportFragmentManager().findFragmentByTag("chat");
+        if (frag instanceof ChatFragment) {
+            ((ChatFragment) frag).startNewChat();
+        }
+    }
+
+    public void updateSelectedConversationInDrawer(long conversationId) {
+        if (drawerAdapter != null) {
+            drawerAdapter.setSelectedConversationId(conversationId);
+        }
+    }
 
     private void switchTab(String tag) {
         if (tag.equals(currentTab)) return;

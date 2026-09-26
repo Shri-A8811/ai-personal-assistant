@@ -37,6 +37,18 @@ public final class FragmentChatBinding implements ViewBinding {
   public final ImageView btnVoiceMic;
 
   @NonNull
+  public final TextView chipSuggest1;
+
+  @NonNull
+  public final TextView chipSuggest2;
+
+  @NonNull
+  public final TextView chipSuggest3;
+
+  @NonNull
+  public final TextView chipSuggest4;
+
+  @NonNull
   public final EditText editChatMessage;
 
   @NonNull
@@ -44,6 +56,9 @@ public final class FragmentChatBinding implements ViewBinding {
 
   @NonNull
   public final LinearLayout inputBar;
+
+  @NonNull
+  public final LinearLayout layoutWelcome;
 
   @NonNull
   public final LinearLayout previewContainer;
@@ -56,18 +71,25 @@ public final class FragmentChatBinding implements ViewBinding {
 
   private FragmentChatBinding(@NonNull ConstraintLayout rootView, @NonNull ImageView btnAttachImage,
       @NonNull ImageView btnRemoveImage, @NonNull FrameLayout btnSend,
-      @NonNull ImageView btnVoiceMic, @NonNull EditText editChatMessage,
+      @NonNull ImageView btnVoiceMic, @NonNull TextView chipSuggest1,
+      @NonNull TextView chipSuggest2, @NonNull TextView chipSuggest3,
+      @NonNull TextView chipSuggest4, @NonNull EditText editChatMessage,
       @NonNull ImageView imgAttachedPreview, @NonNull LinearLayout inputBar,
-      @NonNull LinearLayout previewContainer, @NonNull RecyclerView recyclerChat,
-      @NonNull TextView txtImageName) {
+      @NonNull LinearLayout layoutWelcome, @NonNull LinearLayout previewContainer,
+      @NonNull RecyclerView recyclerChat, @NonNull TextView txtImageName) {
     this.rootView = rootView;
     this.btnAttachImage = btnAttachImage;
     this.btnRemoveImage = btnRemoveImage;
     this.btnSend = btnSend;
     this.btnVoiceMic = btnVoiceMic;
+    this.chipSuggest1 = chipSuggest1;
+    this.chipSuggest2 = chipSuggest2;
+    this.chipSuggest3 = chipSuggest3;
+    this.chipSuggest4 = chipSuggest4;
     this.editChatMessage = editChatMessage;
     this.imgAttachedPreview = imgAttachedPreview;
     this.inputBar = inputBar;
+    this.layoutWelcome = layoutWelcome;
     this.previewContainer = previewContainer;
     this.recyclerChat = recyclerChat;
     this.txtImageName = txtImageName;
@@ -124,6 +146,30 @@ public final class FragmentChatBinding implements ViewBinding {
         break missingId;
       }
 
+      id = R.id.chipSuggest1;
+      TextView chipSuggest1 = ViewBindings.findChildViewById(rootView, id);
+      if (chipSuggest1 == null) {
+        break missingId;
+      }
+
+      id = R.id.chipSuggest2;
+      TextView chipSuggest2 = ViewBindings.findChildViewById(rootView, id);
+      if (chipSuggest2 == null) {
+        break missingId;
+      }
+
+      id = R.id.chipSuggest3;
+      TextView chipSuggest3 = ViewBindings.findChildViewById(rootView, id);
+      if (chipSuggest3 == null) {
+        break missingId;
+      }
+
+      id = R.id.chipSuggest4;
+      TextView chipSuggest4 = ViewBindings.findChildViewById(rootView, id);
+      if (chipSuggest4 == null) {
+        break missingId;
+      }
+
       id = R.id.editChatMessage;
       EditText editChatMessage = ViewBindings.findChildViewById(rootView, id);
       if (editChatMessage == null) {
@@ -139,6 +185,12 @@ public final class FragmentChatBinding implements ViewBinding {
       id = R.id.inputBar;
       LinearLayout inputBar = ViewBindings.findChildViewById(rootView, id);
       if (inputBar == null) {
+        break missingId;
+      }
+
+      id = R.id.layoutWelcome;
+      LinearLayout layoutWelcome = ViewBindings.findChildViewById(rootView, id);
+      if (layoutWelcome == null) {
         break missingId;
       }
 
@@ -161,7 +213,8 @@ public final class FragmentChatBinding implements ViewBinding {
       }
 
       return new FragmentChatBinding((ConstraintLayout) rootView, btnAttachImage, btnRemoveImage,
-          btnSend, btnVoiceMic, editChatMessage, imgAttachedPreview, inputBar, previewContainer,
+          btnSend, btnVoiceMic, chipSuggest1, chipSuggest2, chipSuggest3, chipSuggest4,
+          editChatMessage, imgAttachedPreview, inputBar, layoutWelcome, previewContainer,
           recyclerChat, txtImageName);
     }
     String missingId = rootView.getResources().getResourceName(id);

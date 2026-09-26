@@ -11,9 +11,11 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.constraintlayout.widget.ConstraintLayout;
+import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.viewbinding.ViewBinding;
 import androidx.viewbinding.ViewBindings;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
+import com.google.android.material.navigation.NavigationView;
 import com.mitaoe.shridhar202401040197.R;
 import java.lang.NullPointerException;
 import java.lang.Override;
@@ -21,7 +23,7 @@ import java.lang.String;
 
 public final class ActivityMainBinding implements ViewBinding {
   @NonNull
-  private final ConstraintLayout rootView;
+  private final DrawerLayout rootView;
 
   @NonNull
   public final View bottomNavDivider;
@@ -30,16 +32,31 @@ public final class ActivityMainBinding implements ViewBinding {
   public final BottomNavigationView bottomNavigation;
 
   @NonNull
+  public final ImageView btnDrawer;
+
+  @NonNull
   public final LinearLayout btnModelPill;
 
   @NonNull
   public final ImageView btnSettings;
 
   @NonNull
+  public final ImageView btnTopNewChat;
+
+  @NonNull
+  public final NavDrawerContentBinding drawerContent;
+
+  @NonNull
+  public final DrawerLayout drawerLayout;
+
+  @NonNull
   public final FrameLayout fragmentContainer;
 
   @NonNull
-  public final ImageView imgBrand;
+  public final LinearLayout layoutTopActions;
+
+  @NonNull
+  public final NavigationView navigationViewDrawer;
 
   @NonNull
   public final ConstraintLayout topBar;
@@ -48,32 +65,36 @@ public final class ActivityMainBinding implements ViewBinding {
   public final View topBarDivider;
 
   @NonNull
-  public final TextView txtAppTitle;
-
-  @NonNull
   public final TextView txtCurrentModel;
 
-  private ActivityMainBinding(@NonNull ConstraintLayout rootView, @NonNull View bottomNavDivider,
-      @NonNull BottomNavigationView bottomNavigation, @NonNull LinearLayout btnModelPill,
-      @NonNull ImageView btnSettings, @NonNull FrameLayout fragmentContainer,
-      @NonNull ImageView imgBrand, @NonNull ConstraintLayout topBar, @NonNull View topBarDivider,
-      @NonNull TextView txtAppTitle, @NonNull TextView txtCurrentModel) {
+  private ActivityMainBinding(@NonNull DrawerLayout rootView, @NonNull View bottomNavDivider,
+      @NonNull BottomNavigationView bottomNavigation, @NonNull ImageView btnDrawer,
+      @NonNull LinearLayout btnModelPill, @NonNull ImageView btnSettings,
+      @NonNull ImageView btnTopNewChat, @NonNull NavDrawerContentBinding drawerContent,
+      @NonNull DrawerLayout drawerLayout, @NonNull FrameLayout fragmentContainer,
+      @NonNull LinearLayout layoutTopActions, @NonNull NavigationView navigationViewDrawer,
+      @NonNull ConstraintLayout topBar, @NonNull View topBarDivider,
+      @NonNull TextView txtCurrentModel) {
     this.rootView = rootView;
     this.bottomNavDivider = bottomNavDivider;
     this.bottomNavigation = bottomNavigation;
+    this.btnDrawer = btnDrawer;
     this.btnModelPill = btnModelPill;
     this.btnSettings = btnSettings;
+    this.btnTopNewChat = btnTopNewChat;
+    this.drawerContent = drawerContent;
+    this.drawerLayout = drawerLayout;
     this.fragmentContainer = fragmentContainer;
-    this.imgBrand = imgBrand;
+    this.layoutTopActions = layoutTopActions;
+    this.navigationViewDrawer = navigationViewDrawer;
     this.topBar = topBar;
     this.topBarDivider = topBarDivider;
-    this.txtAppTitle = txtAppTitle;
     this.txtCurrentModel = txtCurrentModel;
   }
 
   @Override
   @NonNull
-  public ConstraintLayout getRoot() {
+  public DrawerLayout getRoot() {
     return rootView;
   }
 
@@ -110,6 +131,12 @@ public final class ActivityMainBinding implements ViewBinding {
         break missingId;
       }
 
+      id = R.id.btnDrawer;
+      ImageView btnDrawer = ViewBindings.findChildViewById(rootView, id);
+      if (btnDrawer == null) {
+        break missingId;
+      }
+
       id = R.id.btnModelPill;
       LinearLayout btnModelPill = ViewBindings.findChildViewById(rootView, id);
       if (btnModelPill == null) {
@@ -122,15 +149,36 @@ public final class ActivityMainBinding implements ViewBinding {
         break missingId;
       }
 
+      id = R.id.btnTopNewChat;
+      ImageView btnTopNewChat = ViewBindings.findChildViewById(rootView, id);
+      if (btnTopNewChat == null) {
+        break missingId;
+      }
+
+      id = R.id.drawerContent;
+      View drawerContent = ViewBindings.findChildViewById(rootView, id);
+      if (drawerContent == null) {
+        break missingId;
+      }
+      NavDrawerContentBinding binding_drawerContent = NavDrawerContentBinding.bind(drawerContent);
+
+      DrawerLayout drawerLayout = (DrawerLayout) rootView;
+
       id = R.id.fragment_container;
       FrameLayout fragmentContainer = ViewBindings.findChildViewById(rootView, id);
       if (fragmentContainer == null) {
         break missingId;
       }
 
-      id = R.id.imgBrand;
-      ImageView imgBrand = ViewBindings.findChildViewById(rootView, id);
-      if (imgBrand == null) {
+      id = R.id.layoutTopActions;
+      LinearLayout layoutTopActions = ViewBindings.findChildViewById(rootView, id);
+      if (layoutTopActions == null) {
+        break missingId;
+      }
+
+      id = R.id.navigationViewDrawer;
+      NavigationView navigationViewDrawer = ViewBindings.findChildViewById(rootView, id);
+      if (navigationViewDrawer == null) {
         break missingId;
       }
 
@@ -146,21 +194,16 @@ public final class ActivityMainBinding implements ViewBinding {
         break missingId;
       }
 
-      id = R.id.txtAppTitle;
-      TextView txtAppTitle = ViewBindings.findChildViewById(rootView, id);
-      if (txtAppTitle == null) {
-        break missingId;
-      }
-
       id = R.id.txtCurrentModel;
       TextView txtCurrentModel = ViewBindings.findChildViewById(rootView, id);
       if (txtCurrentModel == null) {
         break missingId;
       }
 
-      return new ActivityMainBinding((ConstraintLayout) rootView, bottomNavDivider,
-          bottomNavigation, btnModelPill, btnSettings, fragmentContainer, imgBrand, topBar,
-          topBarDivider, txtAppTitle, txtCurrentModel);
+      return new ActivityMainBinding((DrawerLayout) rootView, bottomNavDivider, bottomNavigation,
+          btnDrawer, btnModelPill, btnSettings, btnTopNewChat, binding_drawerContent, drawerLayout,
+          fragmentContainer, layoutTopActions, navigationViewDrawer, topBar, topBarDivider,
+          txtCurrentModel);
     }
     String missingId = rootView.getResources().getResourceName(id);
     throw new NullPointerException("Missing required view with ID: ".concat(missingId));

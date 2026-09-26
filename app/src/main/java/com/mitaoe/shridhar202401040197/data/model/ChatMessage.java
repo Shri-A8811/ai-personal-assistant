@@ -11,6 +11,7 @@ public class ChatMessage implements Serializable {
     @PrimaryKey(autoGenerate = true)
     private long id;
 
+    private long conversationId;
     private String text;
     private boolean isUser;
     private long timestamp;
@@ -21,12 +22,16 @@ public class ChatMessage implements Serializable {
     private String imageUri; // Optional image attachment
 
     public ChatMessage(String text, boolean isUser, long timestamp, String modelName) {
+        this.conversationId = 0;
         this.text = text;
         this.isUser = isUser;
         this.timestamp = timestamp;
         this.modelName = modelName;
         this.hasAction = false;
     }
+
+    public long getConversationId() { return conversationId; }
+    public void setConversationId(long conversationId) { this.conversationId = conversationId; }
 
     public long getId() { return id; }
     public void setId(long id) { this.id = id; }

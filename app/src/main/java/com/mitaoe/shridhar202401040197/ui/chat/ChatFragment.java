@@ -20,14 +20,17 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.LiveData;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.mitaoe.shridhar202401040197.MainActivity;
 import com.mitaoe.shridhar202401040197.R;
 import com.mitaoe.shridhar202401040197.ai.AiService;
 import com.mitaoe.shridhar202401040197.ai.NaturalLanguageActionParser;
 import com.mitaoe.shridhar202401040197.data.database.AppDatabase;
 import com.mitaoe.shridhar202401040197.data.model.ChatMessage;
+import com.mitaoe.shridhar202401040197.data.model.Conversation;
 import com.mitaoe.shridhar202401040197.data.preference.PreferenceManager;
 import com.mitaoe.shridhar202401040197.util.VoiceAssistantHelper;
 
@@ -42,7 +45,8 @@ public class ChatFragment extends Fragment {
     private EditText editChatMessage;
     private FrameLayout btnSend;
     private ImageView btnVoiceMic, btnAttachImage, btnRemoveImage, imgAttachedPreview;
-    private LinearLayout previewContainer;
+    private LinearLayout previewContainer, layoutWelcome;
+    private TextView chipSuggest1, chipSuggest2, chipSuggest3, chipSuggest4;
 
     private AppDatabase db;
     private PreferenceManager prefManager;
@@ -51,6 +55,8 @@ public class ChatFragment extends Fragment {
 
     private Uri attachedImageUri = null;
     private List<ChatMessage> currentHistory = new ArrayList<>();
+    private long currentConversationId = 0;
+    private LiveData<List<ChatMessage>> currentMessagesLiveData = null;
 
     private final ActivityResultLauncher<String> imagePickerLauncher =
             registerForActivityResult(new ActivityResultContracts.GetContent(), uri -> {
@@ -88,6 +94,12 @@ public class ChatFragment extends Fragment {
         btnRemoveImage = view.findViewById(R.id.btnRemoveImage);
         imgAttachedPreview = view.findViewById(R.id.imgAttachedPreview);
         previewContainer = view.findViewById(R.id.previewContainer);
+        layoutWelcome = view.findViewById(R.id.layoutWelcome);
+
+        chipSuggest1 = view.findViewById(R.id.chipSuggest1);
+        chipSuggest2 = view.findViewById(R.id.chipSuggest2);
+        chipSuggest3 = view.findViewById(R.id.chipSuggest3);
+        chipSuggest4 = view.findViewById(R.id.chipSuggest4);
 
         LinearLayoutManager layoutManager = new LinearLayoutManager(requireContext());
         layoutManager.setStackFromEnd(true);
@@ -96,28 +108,90 @@ public class ChatFragment extends Fragment {
         chatAdapter = new ChatAdapter(text -> voiceHelper.speak(text));
         recyclerChat.setAdapter(chatAdapter);
 
-        db.chatDao().getAllMessages().observe(getViewLifecycleOwner(), messages -> {
-            if (messages != null) {
-                currentHistory = messages;
-                chatAdapter.setMessages(messages);
-                if (!messages.isEmpty()) {
-                    recyclerChat.scrollToPosition(messages.size() - 1);
-                }
+        setupStarterChips();
+
+        // Load latest conversation or start fresh
+        Executors.newSingleThreadExecutor().execute(() -> {
+            Conversation latest = db.conversationDao().getLatestConversationSync();
+            long initConvId = latest != null ? latest.getId() : 0;
+            if (isAdded()) {
+                requireActivity().runOnUiThread(() -> loadConversation(initConvId));
             }
         });
 
         btnSend.setOnClickListener(v -> sendMessage());
-
         btnAttachImage.setOnClickListener(v -> imagePickerLauncher.launch("image/*"));
-
         btnRemoveImage.setOnClickListener(v -> {
             attachedImageUri = null;
             previewContainer.setVisibility(View.GONE);
         });
-
         btnVoiceMic.setOnClickListener(v -> checkVoicePermissionAndListen());
 
         return view;
+    }
+
+    private void setupStarterChips() {
+        View.OnClickListener clickListener = v -> {
+            if (v instanceof TextView) {
+                String text = ((TextView) v).getText().toString();
+                // Strip emoji prefix
+                String prompt = text.replaceFirst("^[💡⏰📝✅]\\s*", "").trim();
+                editChatMessage.setText(prompt);
+                sendMessage();
+            }
+        };
+
+        chipSuggest1.setOnClickListener(clickListener);
+        chipSuggest2.setOnClickListener(clickListener);
+        chipSuggest3.setOnClickListener(clickListener);
+        chipSuggest4.setOnClickListener(clickListener);
+    }
+
+    public void startNewChat() {
+        currentConversationId = 0;
+        currentHistory.clear();
+        chatAdapter.setMessages(new ArrayList<>());
+        if (currentMessagesLiveData != null) {
+            currentMessagesLiveData.removeObservers(getViewLifecycleOwner());
+            currentMessagesLiveData = null;
+        }
+        layoutWelcome.setVisibility(View.VISIBLE);
+        recyclerChat.setVisibility(View.GONE);
+        if (getActivity() instanceof MainActivity) {
+            ((MainActivity) getActivity()).updateSelectedConversationInDrawer(0);
+        }
+    }
+
+    public void loadConversation(long conversationId) {
+        this.currentConversationId = conversationId;
+        if (currentMessagesLiveData != null) {
+            currentMessagesLiveData.removeObservers(getViewLifecycleOwner());
+        }
+
+        if (conversationId == 0) {
+            startNewChat();
+            return;
+        }
+
+        currentMessagesLiveData = db.chatDao().getMessagesForConversation(conversationId);
+        currentMessagesLiveData.observe(getViewLifecycleOwner(), messages -> {
+            if (messages != null && !messages.isEmpty()) {
+                currentHistory = messages;
+                chatAdapter.setMessages(messages);
+                layoutWelcome.setVisibility(View.GONE);
+                recyclerChat.setVisibility(View.VISIBLE);
+                recyclerChat.scrollToPosition(messages.size() - 1);
+            } else {
+                currentHistory.clear();
+                chatAdapter.setMessages(new ArrayList<>());
+                layoutWelcome.setVisibility(View.VISIBLE);
+                recyclerChat.setVisibility(View.GONE);
+            }
+        });
+
+        if (getActivity() instanceof MainActivity) {
+            ((MainActivity) getActivity()).updateSelectedConversationInDrawer(conversationId);
+        }
     }
 
     private void checkVoicePermissionAndListen() {
@@ -159,77 +233,109 @@ public class ChatFragment extends Fragment {
         String imageUriStr = attachedImageUri != null ? attachedImageUri.toString() : null;
         attachedImageUri = null;
         previewContainer.setVisibility(View.GONE);
-
-        // 1. User Message
-        ChatMessage userMsg = new ChatMessage(input, true, System.currentTimeMillis(), "User");
-        if (imageUriStr != null) userMsg.setImageUri(imageUriStr);
+        layoutWelcome.setVisibility(View.GONE);
+        recyclerChat.setVisibility(View.VISIBLE);
 
         Executors.newSingleThreadExecutor().execute(() -> {
-            db.chatDao().insert(userMsg);
-        });
+            // If new conversation, create conversation record first
+            if (currentConversationId == 0) {
+                String title = input.length() > 32 ? input.substring(0, 32) + "..." : input;
+                if (title.isEmpty()) title = "Image Query";
+                Conversation conv = new Conversation(title, System.currentTimeMillis(), System.currentTimeMillis(), prefManager.getActiveModelName());
+                currentConversationId = db.conversationDao().insert(conv);
 
-        // 2. Check Natural Language Actions (Create task / reminder / note directly)
-        NaturalLanguageActionParser.ActionResult actionResult = NaturalLanguageActionParser.parseAndExecute(requireContext(), input);
-
-        if (actionResult.type != NaturalLanguageActionParser.ActionType.NONE && actionResult.isSuccess) {
-            ChatMessage assistantMsg = new ChatMessage(
-                    actionResult.confirmationMessage,
-                    false,
-                    System.currentTimeMillis(),
-                    prefManager.getActiveModelName()
-            );
-            assistantMsg.setHasAction(true);
-            assistantMsg.setActionType(actionResult.type.name());
-            assistantMsg.setActionTitle(actionResult.title);
-
-            Executors.newSingleThreadExecutor().execute(() -> {
-                db.chatDao().insert(assistantMsg);
-            });
-
-            if (prefManager.isVoiceAutoSpeakEnabled()) {
-                voiceHelper.speak(actionResult.confirmationMessage);
-            }
-            return;
-        }
-
-        // 3. Regular AI Query via Multi-Provider Streaming
-        String activeModelName = prefManager.getActiveModelName();
-        ChatMessage pendingMsg = new ChatMessage("Thinking...", false, System.currentTimeMillis(), activeModelName);
-        chatAdapter.appendMessage(pendingMsg);
-        recyclerChat.scrollToPosition(chatAdapter.getItemCount() - 1);
-
-        aiService.generateResponse(currentHistory, input, new AiService.StreamCallback() {
-            @Override
-            public void onStart() {}
-
-            @Override
-            public void onToken(String token, String fullTextSoFar) {
-                chatAdapter.updateLastMessage(fullTextSoFar);
-                recyclerChat.scrollToPosition(chatAdapter.getItemCount() - 1);
-            }
-
-            @Override
-            public void onComplete(String fullResponse) {
-                chatAdapter.updateLastMessage(fullResponse);
-                ChatMessage completedMsg = new ChatMessage(fullResponse, false, System.currentTimeMillis(), activeModelName);
-                Executors.newSingleThreadExecutor().execute(() -> {
-                    db.chatDao().insert(completedMsg);
-                });
-
-                if (prefManager.isVoiceAutoSpeakEnabled()) {
-                    voiceHelper.speak(fullResponse);
+                if (isAdded()) {
+                    requireActivity().runOnUiThread(() -> {
+                        loadConversation(currentConversationId);
+                    });
+                }
+            } else {
+                Conversation conv = db.conversationDao().getConversationById(currentConversationId);
+                if (conv != null) {
+                    conv.setUpdatedAt(System.currentTimeMillis());
+                    db.conversationDao().update(conv);
                 }
             }
 
-            @Override
-            public void onError(String errorMessage) {
-                String errorNotice = "⚠️ " + errorMessage;
-                chatAdapter.updateLastMessage(errorNotice);
-                ChatMessage errMsg = new ChatMessage(errorNotice, false, System.currentTimeMillis(), activeModelName);
-                Executors.newSingleThreadExecutor().execute(() -> {
-                    db.chatDao().insert(errMsg);
+            // 1. Insert User Message
+            ChatMessage userMsg = new ChatMessage(input, true, System.currentTimeMillis(), "User");
+            userMsg.setConversationId(currentConversationId);
+            if (imageUriStr != null) userMsg.setImageUri(imageUriStr);
+            db.chatDao().insert(userMsg);
+
+            // 2. Check Natural Language Actions
+            NaturalLanguageActionParser.ActionResult actionResult = NaturalLanguageActionParser.parseAndExecute(requireContext(), input);
+
+            if (actionResult.type != NaturalLanguageActionParser.ActionType.NONE && actionResult.isSuccess) {
+                ChatMessage assistantMsg = new ChatMessage(
+                        actionResult.confirmationMessage,
+                        false,
+                        System.currentTimeMillis(),
+                        prefManager.getActiveModelName()
+                );
+                assistantMsg.setConversationId(currentConversationId);
+                assistantMsg.setHasAction(true);
+                assistantMsg.setActionType(actionResult.type.name());
+                assistantMsg.setActionTitle(actionResult.title);
+
+                db.chatDao().insert(assistantMsg);
+
+                if (prefManager.isVoiceAutoSpeakEnabled()) {
+                    voiceHelper.speak(actionResult.confirmationMessage);
+                }
+                return;
+            }
+
+            // 3. Regular AI Query via Multi-Provider Streaming
+            String activeModelName = prefManager.getActiveModelName();
+            ChatMessage pendingMsg = new ChatMessage("Thinking...", false, System.currentTimeMillis(), activeModelName);
+            pendingMsg.setConversationId(currentConversationId);
+
+            if (isAdded()) {
+                requireActivity().runOnUiThread(() -> {
+                    chatAdapter.appendMessage(pendingMsg);
+                    recyclerChat.scrollToPosition(chatAdapter.getItemCount() - 1);
                 });
             }
+
+            aiService.generateResponse(currentHistory, input, new AiService.StreamCallback() {
+                @Override public void onStart() {}
+
+                @Override
+                public void onToken(String token, String fullTextSoFar) {
+                    if (isAdded()) {
+                        chatAdapter.updateLastMessage(fullTextSoFar);
+                        recyclerChat.scrollToPosition(chatAdapter.getItemCount() - 1);
+                    }
+                }
+
+                @Override
+                public void onComplete(String fullResponse) {
+                    if (isAdded()) {
+                        chatAdapter.updateLastMessage(fullResponse);
+                    }
+                    pendingMsg.setText(fullResponse);
+                    Executors.newSingleThreadExecutor().execute(() -> {
+                        db.chatDao().insert(pendingMsg);
+                    });
+
+                    if (prefManager.isVoiceAutoSpeakEnabled()) {
+                        voiceHelper.speak(fullResponse);
+                    }
+                }
+
+                @Override
+                public void onError(String errorMessage) {
+                    String errorNotice = "⚠️ " + errorMessage;
+                    if (isAdded()) {
+                        chatAdapter.updateLastMessage(errorNotice);
+                    }
+                    pendingMsg.setText(errorNotice);
+                    Executors.newSingleThreadExecutor().execute(() -> {
+                        db.chatDao().insert(pendingMsg);
+                    });
+                }
+            });
         });
     }
 
