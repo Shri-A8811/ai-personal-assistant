@@ -1,0 +1,43 @@
+<resources>
+    <string name="app_name">AI Personal Assistant</string>
+    
+    <!-- Navigation Tabs -->
+    <string name="nav_chat">Assistant</string>
+    <string name="nav_tasks">Tasks</string>
+    <string name="nav_notes">Notes</string>
+    <string name="nav_dashboard">Briefing</string>
+    
+    <!-- Chat Screen -->
+    <string name="chat_hint">Ask anything, or say "Remind me to..."</string>
+    <string name="switch_model">Switch Model</string>
+    <string name="send">Send</string>
+    <string name="voice_input">Voice Input</string>
+    
+    <!-- Tasks Screen -->
+    <string name="tasks_title">Tasks &amp; Reminders</string>
+    <string name="add_task">New Task</string>
+    <string name="filter_all">All</string>
+    <string name="filter_pending">Pending</string>
+    <string name="filter_completed">Completed</string>
+    <string name="no_tasks">No tasks yet. Create one or ask your AI assistant!</string>
+    
+    <!-- Notes Screen -->
+    <string name="notes_title">Smart Notes</string>
+    <string name="add_note">New Note</string>
+    <string name="ai_summarize">✨ Summarize</string>
+    <string name="ai_extract_tasks">📋 Extract Tasks</string>
+    <string name="ai_polish">✍️ Polish</string>
+    <string name="no_notes">No notes found. Tap + to write your first note.</string>
+    
+    <!-- Dashboard Screen -->
+    <string name="dashboard_title">Daily AI Briefing</string>
+    <string name="generate_briefing">🔄 Refresh Briefing</string>
+    <string name="today_tasks">Today\'s Tasks</string>
+    <string name="quick_stats">Quick Stats</string>
+    
+    <!-- Settings -->
+    <string name="settings_title">AI Models &amp; Providers</string>
+    <string name="save">Save</string>
+    <string name="cancel">Cancel</string>
+    <string name="fetch_models">Fetch Models</string>
+</resources>

@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Network Permissions for Cloud AI & Model Fetching -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+    <!-- Audio / Voice Assistant Permissions -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+
+    <!-- Alarms, Reminders & Notifications -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
+    <application
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.AIPersonalAssistant">
+
+        <!-- Main Launcher Activity -->
+        <activity
+            android:name="com.mitaoe.shridhar202401040197.MainActivity"
+            android:exported="true"
+            android:windowSoftInputMode="adjustResize">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- Note Editor Activity -->
+        <activity
+            android:name="com.mitaoe.shridhar202401040197.ui.notes.NoteEditActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+
+        <!-- Broadcast Receivers for Scheduled Alarms & Notification Actions -->
+        <receiver
+            android:name="com.mitaoe.shridhar202401040197.receiver.AlarmReceiver"
+            android:exported="false" />
+
+        <receiver
+            android:name="com.mitaoe.shridhar202401040197.receiver.NotificationActionReceiver"
+            android:exported="false" />
+
+        <receiver
+            android:name="com.mitaoe.shridhar202401040197.receiver.BootReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
+
+    </application>
+
+</manifest>
