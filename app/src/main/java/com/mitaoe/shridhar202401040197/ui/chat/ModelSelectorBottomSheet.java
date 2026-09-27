@@ -1,11 +1,11 @@
 package com.mitaoe.shridhar202401040197.ui.chat;
 
-import android.content.Context;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -14,11 +14,11 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
+import com.google.android.material.button.MaterialButton;
 import com.mitaoe.shridhar202401040197.R;
 import com.mitaoe.shridhar202401040197.data.model.AiModel;
 import com.mitaoe.shridhar202401040197.data.preference.PreferenceManager;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class ModelSelectorBottomSheet extends BottomSheetDialogFragment {
@@ -26,6 +26,7 @@ public class ModelSelectorBottomSheet extends BottomSheetDialogFragment {
     public interface OnModelSelectedListener {
         void onModelSelected(AiModel model);
         void onOpenSettingsRequested();
+        void onOpenLibraryRequested();
     }
 
     private PreferenceManager prefManager;
@@ -47,9 +48,33 @@ public class ModelSelectorBottomSheet extends BottomSheetDialogFragment {
         prefManager = new PreferenceManager(requireContext());
 
         RecyclerView recycler = view.findViewById(R.id.recyclerModelSelector);
+        LinearLayout layoutNoPinned = view.findViewById(R.id.layoutNoPinnedModels);
+        TextView btnManageModels = view.findViewById(R.id.btnManageModels);
+        MaterialButton btnSearchAndPinMore = view.findViewById(R.id.btnSearchAndPinMore);
+
         recycler.setLayoutManager(new LinearLayoutManager(requireContext()));
 
-        TextView btnManageModels = view.findViewById(R.id.btnManageModels);
+        List<AiModel> pinned = prefManager.getPinnedModels();
+
+        if (pinned.isEmpty()) {
+            recycler.setVisibility(View.GONE);
+            layoutNoPinned.setVisibility(View.VISIBLE);
+        } else {
+            recycler.setVisibility(View.VISIBLE);
+            layoutNoPinned.setVisibility(View.GONE);
+
+            ModelAdapter adapter = new ModelAdapter(pinned, prefManager.getActiveModelId(), model -> {
+                prefManager.setActiveProvider(model.getProvider());
+                prefManager.setActiveModelId(model.getId());
+                prefManager.setActiveModelName(model.getDisplayName());
+                if (listener != null) {
+                    listener.onModelSelected(model);
+                }
+                dismiss();
+            });
+            recycler.setAdapter(adapter);
+        }
+
         btnManageModels.setOnClickListener(v -> {
             dismiss();
             if (listener != null) {
@@ -57,25 +82,12 @@ public class ModelSelectorBottomSheet extends BottomSheetDialogFragment {
             }
         });
 
-        List<AiModel> allModels = prefManager.getPinnedModels();
-        List<AiModel> pinnedOnly = new ArrayList<>();
-        for (AiModel m : allModels) {
-            if (m.isPinned()) pinnedOnly.add(m);
-        }
-        if (pinnedOnly.isEmpty()) {
-            pinnedOnly = allModels; // Fallback to all if none explicitly pinned
-        }
-
-        ModelAdapter adapter = new ModelAdapter(pinnedOnly, prefManager.getActiveModelId(), model -> {
-            prefManager.setActiveProvider(model.getProvider());
-            prefManager.setActiveModelId(model.getId());
-            prefManager.setActiveModelName(model.getDisplayName());
-            if (listener != null) {
-                listener.onModelSelected(model);
-            }
+        btnSearchAndPinMore.setOnClickListener(v -> {
             dismiss();
+            if (listener != null) {
+                listener.onOpenLibraryRequested();
+            }
         });
-        recycler.setAdapter(adapter);
 
         return view;
     }
@@ -106,7 +118,8 @@ public class ModelSelectorBottomSheet extends BottomSheetDialogFragment {
         public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
             AiModel model = models.get(position);
             holder.txtTitle.setText(model.getDisplayName());
-            holder.txtSubtitle.setText(model.getProvider().toUpperCase() + " • " + model.getDescription());
+            String desc = model.getDescription() != null ? model.getDescription() : model.getId();
+            holder.txtSubtitle.setText(model.getProvider().toUpperCase() + " • " + desc);
 
             if (model.isFree()) {
                 holder.badgeFree.setVisibility(View.VISIBLE);
@@ -114,7 +127,7 @@ public class ModelSelectorBottomSheet extends BottomSheetDialogFragment {
                 holder.badgeFree.setVisibility(View.GONE);
             }
 
-            boolean isSelected = model.getId().equals(activeModelId);
+            boolean isSelected = model.getId().equalsIgnoreCase(activeModelId);
             holder.imgSelectedCheck.setVisibility(isSelected ? View.VISIBLE : View.GONE);
 
             holder.itemView.setOnClickListener(v -> clickListener.onItemClick(model));

@@ -31,6 +31,7 @@ import com.mitaoe.shridhar202401040197.data.preference.PreferenceManager;
 import com.mitaoe.shridhar202401040197.service.NotificationHelper;
 import com.mitaoe.shridhar202401040197.ui.chat.ChatFragment;
 import com.mitaoe.shridhar202401040197.ui.chat.ConversationDrawerAdapter;
+import com.mitaoe.shridhar202401040197.ui.chat.ModelLibraryBottomSheet;
 import com.mitaoe.shridhar202401040197.ui.chat.ModelSelectorBottomSheet;
 import com.mitaoe.shridhar202401040197.ui.dashboard.DashboardFragment;
 import com.mitaoe.shridhar202401040197.ui.notes.NotesFragment;
@@ -249,10 +250,14 @@ public class MainActivity extends AppCompatActivity {
 
     public void updateModelPillLabel() {
         String activeModelName = prefManager.getActiveModelName();
-        txtCurrentModel.setText(activeModelName != null && !activeModelName.isEmpty() ? activeModelName : "Select Model");
+        if (activeModelName != null && !activeModelName.isEmpty()) {
+            txtCurrentModel.setText(activeModelName);
+        } else {
+            txtCurrentModel.setText("Select Model / Add API");
+        }
     }
 
-    private void showModelSelectorBottomSheet() {
+    public void showModelSelectorBottomSheet() {
         ModelSelectorBottomSheet sheet = new ModelSelectorBottomSheet();
         sheet.setOnModelSelectedListener(new ModelSelectorBottomSheet.OnModelSelectedListener() {
             @Override
@@ -265,11 +270,38 @@ public class MainActivity extends AppCompatActivity {
             public void onOpenSettingsRequested() {
                 showSettingsBottomSheet();
             }
+
+            @Override
+            public void onOpenLibraryRequested() {
+                showModelLibraryBottomSheet();
+            }
         });
         sheet.show(getSupportFragmentManager(), "ModelSelectorSheet");
     }
 
-    private void showSettingsBottomSheet() {
+    public void showModelLibraryBottomSheet() {
+        ModelLibraryBottomSheet sheet = new ModelLibraryBottomSheet();
+        sheet.setOnModelLibraryListener(new ModelLibraryBottomSheet.OnModelLibraryListener() {
+            @Override
+            public void onModelSelected(AiModel model) {
+                updateModelPillLabel();
+                Toast.makeText(MainActivity.this, "Selected: " + model.getDisplayName(), Toast.LENGTH_SHORT).show();
+            }
+
+            @Override
+            public void onOpenSettingsRequested() {
+                showSettingsBottomSheet();
+            }
+
+            @Override
+            public void onModelsUpdated() {
+                updateModelPillLabel();
+            }
+        });
+        sheet.show(getSupportFragmentManager(), "ModelLibrarySheet");
+    }
+
+    public void showSettingsBottomSheet() {
         SettingsBottomSheet sheet = new SettingsBottomSheet();
         sheet.setOnSettingsSavedListener(() -> {
             updateModelPillLabel();

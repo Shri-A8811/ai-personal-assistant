@@ -2,177 +2,146 @@
 <androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:background="@drawable/bg_chat_assistant"
+    android:layout_height="match_parent"
+    android:background="@color/bg_dark"
     android:fillViewport="true">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="20dp">
+        android:padding="16dp">
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/settings_title"
-            android:textColor="@color/text_primary"
-            android:textSize="18sp"
-            android:textStyle="bold" />
+        <!-- Handle Bar -->
+        <View
+            android:layout_width="36dp"
+            android:layout_height="4dp"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginBottom="12dp"
+            android:background="@drawable/bg_model_pill" />
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:text="Configure multiple API providers (Gemini, OpenRouter, Groq, NIM, OpenAI) and pick which models appear in chat."
-            android:textColor="@color/text_muted"
-            android:textSize="12sp" />
-
-        <!-- Select Active Provider -->
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:text="Select Provider to Configure"
-            android:textColor="@color/accent_gemini_blue"
-            android:textSize="13sp"
-            android:textStyle="bold" />
-
-        <Spinner
-            android:id="@+id/spinnerProvider"
-            android:layout_width="match_parent"
-            android:layout_height="46dp"
-            android:layout_marginTop="6dp"
-            android:background="@drawable/bg_input_box"
-            android:paddingHorizontal="12dp" />
-
-        <!-- API Key Input -->
-        <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/layoutApiKey"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            app:boxStrokeColor="@color/accent_gemini_blue"
-            app:endIconMode="password_toggle"
-            app:hintTextColor="@color/accent_gemini_blue">
-
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/editApiKey"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:hint="Enter API Key"
-                android:inputType="textPassword"
-                android:textColor="@color/text_primary"
-                android:textSize="13sp" />
-        </com.google.android.material.textfield.TextInputLayout>
-
-        <!-- Custom Base URL (if custom selected) -->
-        <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/layoutCustomUrl"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:visibility="gone"
-            app:boxStrokeColor="@color/accent_gemini_blue"
-            app:hintTextColor="@color/accent_gemini_blue">
-
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/editCustomUrl"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:hint="Base URL (e.g. http://10.0.2.2:11434/v1/)"
-                android:textColor="@color/text_primary"
-                android:textSize="13sp" />
-        </com.google.android.material.textfield.TextInputLayout>
-
-        <!-- Fetch Models Button & Progress -->
+        <!-- Header -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
             android:gravity="center_vertical"
             android:orientation="horizontal">
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnFetchLiveModels"
-                style="@style/Widget.Material3.Button.TonalButton"
-                android:layout_width="wrap_content"
-                android:layout_height="38dp"
-                android:text="Fetch Available Models"
-                android:textSize="12sp" />
-
-            <ProgressBar
-                android:id="@+id/progressFetchModels"
-                android:layout_width="22dp"
-                android:layout_height="22dp"
-                android:layout_marginStart="10dp"
-                android:indeterminateTint="@color/accent_gemini_blue"
-                android:visibility="gone" />
-        </LinearLayout>
-
-        <!-- Section: Pin Models to Chat Switcher -->
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:text="Pinned Models in Chat"
-            android:textColor="@color/accent_gemini_blue"
-            android:textSize="13sp"
-            android:textStyle="bold" />
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Checked models will appear in your top chat model switcher:"
-            android:textColor="@color/text_muted"
-            android:textSize="11sp" />
-
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/recyclerSettingModels"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:maxHeight="220dp"
-            android:nestedScrollingEnabled="true" />
-
-        <!-- Add Custom Model ID -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
-            android:gravity="center_vertical"
-            android:orientation="horizontal">
-
-            <EditText
-                android:id="@+id/editCustomModelId"
+            <LinearLayout
                 android:layout_width="0dp"
-                android:layout_height="40dp"
+                android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:background="@drawable/bg_input_box"
-                android:hint="Add custom model ID..."
-                android:paddingHorizontal="10dp"
-                android:textColor="@color/text_primary"
-                android:textColorHint="@color/text_muted"
-                android:textSize="12sp" />
+                android:orientation="vertical">
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnAddCustomModel"
-                style="@style/Widget.Material3.Button.TonalButton"
-                android:layout_width="wrap_content"
-                android:layout_height="38dp"
-                android:layout_marginStart="6dp"
-                android:text="+ Add"
-                android:textSize="11sp" />
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="API Providers &amp; Models"
+                    android:textColor="@color/text_primary"
+                    android:textSize="18sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:text="Hermes-style multi-provider API keys and live model library"
+                    android:textColor="@color/text_muted"
+                    android:textSize="12sp" />
+            </LinearLayout>
+
+            <ImageView
+                android:id="@+id/btnCloseSettings"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:padding="6dp"
+                android:src="@drawable/ic_delete"
+                app:tint="@color/text_muted" />
         </LinearLayout>
 
-        <!-- Voice Settings -->
+        <!-- Quick Access Banner: Model Library -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardOpenModelLibrary"
+            style="@style/ModernCard"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="14dp"
+            app:cardBackgroundColor="@color/surface_elevated_dark"
+            app:strokeColor="@color/accent_gemini_blue"
+            app:strokeWidth="1dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:padding="14dp">
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="🔍 Model Library &amp; Search"
+                        android:textColor="@color/accent_gemini_blue"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/txtPinnedSummary"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:text="Search &amp; pin models to your chat switcher"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="12sp" />
+                </LinearLayout>
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnOpenLibraryTop"
+                    style="@style/Widget.Material3.Button.TonalButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="36dp"
+                    android:insetTop="0dp"
+                    android:insetBottom="0dp"
+                    android:text="Browse Models"
+                    android:textColor="@color/text_primary"
+                    android:textSize="11sp" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Section Title: Providers -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:layout_marginBottom="8dp"
+            android:text="AI Model Providers"
+            android:textColor="@color/text_muted"
+            android:textSize="12sp"
+            android:textStyle="bold" />
+
+        <!-- Providers List RecyclerView -->
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/recyclerProviders"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:nestedScrollingEnabled="false"
+            android:overScrollMode="never" />
+
+        <!-- Voice & Audio Settings -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
             android:text="Voice &amp; Audio"
-            android:textColor="@color/accent_gemini_blue"
-            android:textSize="13sp"
+            android:textColor="@color/text_muted"
+            android:textSize="12sp"
             android:textStyle="bold" />
 
         <com.google.android.material.materialswitch.MaterialSwitch
@@ -183,31 +152,18 @@
             android:text="Auto-speak assistant responses (TTS)"
             android:textColor="@color/text_primary" />
 
-        <!-- Dialog Action Buttons -->
-        <LinearLayout
+        <!-- Bottom Action Button -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnDoneSettings"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="44dp"
             android:layout_marginTop="20dp"
-            android:gravity="end"
-            android:orientation="horizontal">
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnCancelSettings"
-                style="@style/Widget.Material3.Button.TextButton"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/cancel"
-                android:textColor="@color/text_muted" />
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnSaveSettings"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
-                android:backgroundTint="@color/accent_gemini_blue"
-                android:text="@string/save"
-                android:textColor="@color/white" />
-        </LinearLayout>
+            android:backgroundTint="@color/accent_gemini_blue"
+            android:text="Done"
+            android:textColor="@color/white"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            app:cornerRadius="22dp" />
 
     </LinearLayout>
 

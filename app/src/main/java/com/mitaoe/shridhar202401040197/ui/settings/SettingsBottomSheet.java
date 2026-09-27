@@ -4,28 +4,29 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
-import android.widget.Button;
-import android.widget.CheckBox;
-import android.widget.EditText;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.ProgressBar;
-import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
+import com.google.android.material.button.MaterialButton;
+import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.materialswitch.MaterialSwitch;
+import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 import com.mitaoe.shridhar202401040197.R;
 import com.mitaoe.shridhar202401040197.ai.AiService;
 import com.mitaoe.shridhar202401040197.data.model.AiModel;
 import com.mitaoe.shridhar202401040197.data.preference.PreferenceManager;
+import com.mitaoe.shridhar202401040197.ui.chat.ModelLibraryBottomSheet;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -40,19 +41,13 @@ public class SettingsBottomSheet extends BottomSheetDialogFragment {
     private AiService aiService;
     private OnSettingsSavedListener listener;
 
-    private Spinner spinnerProvider;
-    private EditText editApiKey, editCustomUrl, editCustomModelId;
-    private TextInputLayout layoutCustomUrl;
-    private Button btnFetchLiveModels, btnAddCustomModel, btnSaveSettings, btnCancelSettings;
-    private ProgressBar progressFetchModels;
-    private RecyclerView recyclerSettingModels;
+    private TextView txtPinnedSummary;
+    private MaterialCardView cardOpenModelLibrary;
+    private MaterialButton btnOpenLibraryTop, btnDoneSettings;
+    private ImageView btnCloseSettings;
+    private RecyclerView recyclerProviders;
     private MaterialSwitch switchVoiceAutoSpeak;
-
-    private final String[] providers = {"OpenRouter", "Google Gemini", "Groq", "NVIDIA NIM", "OpenAI", "Custom"};
-    private final String[] providerKeys = {"openrouter", "gemini", "groq", "nim", "openai", "custom"};
-
-    private List<AiModel> modelsList = new ArrayList<>();
-    private ModelSettingAdapter modelAdapter;
+    private ProviderAdapter providerAdapter;
 
     public void setOnSettingsSavedListener(OnSettingsSavedListener listener) {
         this.listener = listener;
@@ -71,210 +66,224 @@ public class SettingsBottomSheet extends BottomSheetDialogFragment {
         prefManager = new PreferenceManager(requireContext());
         aiService = new AiService(requireContext());
 
-        spinnerProvider = view.findViewById(R.id.spinnerProvider);
-        editApiKey = view.findViewById(R.id.editApiKey);
-        editCustomUrl = view.findViewById(R.id.editCustomUrl);
-        editCustomModelId = view.findViewById(R.id.editCustomModelId);
-        layoutCustomUrl = view.findViewById(R.id.layoutCustomUrl);
-        btnFetchLiveModels = view.findViewById(R.id.btnFetchLiveModels);
-        btnAddCustomModel = view.findViewById(R.id.btnAddCustomModel);
-        btnSaveSettings = view.findViewById(R.id.btnSaveSettings);
-        btnCancelSettings = view.findViewById(R.id.btnCancelSettings);
-        progressFetchModels = view.findViewById(R.id.progressFetchModels);
-        recyclerSettingModels = view.findViewById(R.id.recyclerSettingModels);
+        txtPinnedSummary = view.findViewById(R.id.txtPinnedSummary);
+        cardOpenModelLibrary = view.findViewById(R.id.cardOpenModelLibrary);
+        btnOpenLibraryTop = view.findViewById(R.id.btnOpenLibraryTop);
+        btnDoneSettings = view.findViewById(R.id.btnDoneSettings);
+        btnCloseSettings = view.findViewById(R.id.btnCloseSettings);
+        recyclerProviders = view.findViewById(R.id.recyclerProviders);
         switchVoiceAutoSpeak = view.findViewById(R.id.switchVoiceAutoSpeak);
 
-        // Providers spinner
-        ArrayAdapter<String> spinnerAdapter = new ArrayAdapter<>(requireContext(), android.R.layout.simple_spinner_dropdown_item, providers);
-        spinnerProvider.setAdapter(spinnerAdapter);
+        updatePinnedSummary();
 
-        int currentIdx = 0;
-        String active = prefManager.getActiveProvider();
-        for (int i = 0; i < providerKeys.length; i++) {
-            if (providerKeys[i].equalsIgnoreCase(active)) {
-                currentIdx = i;
-                break;
-            }
-        }
-        spinnerProvider.setSelection(currentIdx);
-        loadProviderKey(providerKeys[currentIdx]);
-
-        spinnerProvider.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> parent, View v, int position, long id) {
-                String pKey = providerKeys[position];
-                loadProviderKey(pKey);
-                layoutCustomUrl.setVisibility("custom".equalsIgnoreCase(pKey) ? View.VISIBLE : View.GONE);
-            }
-
-            @Override public void onNothingSelected(AdapterView<?> parent) {}
-        });
+        // Providers list
+        recyclerProviders.setLayoutManager(new LinearLayoutManager(requireContext()));
+        providerAdapter = new ProviderAdapter(getProviderItems());
+        recyclerProviders.setAdapter(providerAdapter);
 
         // Voice switch
         switchVoiceAutoSpeak.setChecked(prefManager.isVoiceAutoSpeakEnabled());
-
-        // Models RecyclerView
-        recyclerSettingModels.setLayoutManager(new LinearLayoutManager(requireContext()));
-        modelsList = prefManager.getPinnedModels();
-        modelAdapter = new ModelSettingAdapter(modelsList);
-        recyclerSettingModels.setAdapter(modelAdapter);
-
-        // Fetch Live Models Button
-        btnFetchLiveModels.setOnClickListener(v -> {
-            int pos = spinnerProvider.getSelectedItemPosition();
-            String pKey = providerKeys[pos];
-            String key = editApiKey.getText().toString().trim();
-
-            if (key.isEmpty() && !"custom".equalsIgnoreCase(pKey)) {
-                Toast.makeText(requireContext(), "Please enter an API key first to fetch models.", Toast.LENGTH_SHORT).show();
-                return;
-            }
-
-            progressFetchModels.setVisibility(View.VISIBLE);
-            aiService.fetchAvailableModels(pKey, key, new AiService.ModelFetchCallback() {
-                @Override
-                public void onSuccess(List<AiModel> fetched) {
-                    progressFetchModels.setVisibility(View.GONE);
-                    if (fetched.isEmpty()) {
-                        Toast.makeText(requireContext(), "No models returned.", Toast.LENGTH_SHORT).show();
-                        return;
-                    }
-
-                    // Merge into modelsList without duplicate IDs
-                    for (AiModel f : fetched) {
-                        boolean exists = false;
-                        for (AiModel m : modelsList) {
-                            if (m.getId().equalsIgnoreCase(f.getId())) {
-                                exists = true;
-                                break;
-                            }
-                        }
-                        if (!exists) {
-                            modelsList.add(f);
-                        }
-                    }
-                    modelAdapter.notifyDataSetChanged();
-                    Toast.makeText(requireContext(), "Fetched " + fetched.size() + " models!", Toast.LENGTH_SHORT).show();
-                }
-
-                @Override
-                public void onError(String error) {
-                    progressFetchModels.setVisibility(View.GONE);
-                    Toast.makeText(requireContext(), error, Toast.LENGTH_SHORT).show();
-                }
-            });
+        switchVoiceAutoSpeak.setOnCheckedChangeListener((btn, isChecked) -> {
+            prefManager.setVoiceAutoSpeakEnabled(isChecked);
         });
 
-        // Add custom model ID
-        btnAddCustomModel.setOnClickListener(v -> {
-            String customId = editCustomModelId.getText().toString().trim();
-            if (customId.isEmpty()) return;
+        View.OnClickListener openLibListener = v -> openModelLibrary(null);
+        cardOpenModelLibrary.setOnClickListener(openLibListener);
+        btnOpenLibraryTop.setOnClickListener(openLibListener);
 
-            int pos = spinnerProvider.getSelectedItemPosition();
-            String pKey = providerKeys[pos];
-
-            AiModel custom = new AiModel(customId, customId, pKey, false, true, "Custom added model");
-            modelsList.add(0, custom);
-            modelAdapter.notifyItemInserted(0);
-            recyclerSettingModels.scrollToPosition(0);
-            editCustomModelId.setText("");
-            Toast.makeText(requireContext(), "Custom model added & pinned!", Toast.LENGTH_SHORT).show();
+        btnCloseSettings.setOnClickListener(v -> dismiss());
+        btnDoneSettings.setOnClickListener(v -> {
+            if (listener != null) listener.onSettingsSaved();
+            dismiss();
         });
-
-        btnCancelSettings.setOnClickListener(v -> dismiss());
-
-        btnSaveSettings.setOnClickListener(v -> saveAllSettings());
 
         return view;
     }
 
-    private void loadProviderKey(String pKey) {
-        switch (pKey) {
-            case "openrouter": editApiKey.setText(prefManager.getOpenRouterApiKey()); break;
-            case "gemini": editApiKey.setText(prefManager.getGeminiApiKey()); break;
-            case "groq": editApiKey.setText(prefManager.getGroqApiKey()); break;
-            case "nim": editApiKey.setText(prefManager.getNimApiKey()); break;
-            case "openai": editApiKey.setText(prefManager.getOpenAiApiKey()); break;
-            case "custom":
-                editApiKey.setText(prefManager.getCustomApiKey());
-                editCustomUrl.setText(prefManager.getCustomBaseUrl());
-                break;
+    private void updatePinnedSummary() {
+        List<AiModel> pinned = prefManager.getPinnedModels();
+        if (pinned.isEmpty()) {
+            txtPinnedSummary.setText("0 models pinned — tap to search & pin free models");
+        } else {
+            txtPinnedSummary.setText(pinned.size() + " models pinned for chat switcher");
         }
     }
 
-    private void saveAllSettings() {
-        int pos = spinnerProvider.getSelectedItemPosition();
-        String pKey = providerKeys[pos];
-        String key = editApiKey.getText().toString().trim();
+    private void openModelLibrary(@Nullable String initialProviderFilter) {
+        ModelLibraryBottomSheet librarySheet = new ModelLibraryBottomSheet();
+        librarySheet.setOnModelLibraryListener(new ModelLibraryBottomSheet.OnModelLibraryListener() {
+            @Override
+            public void onModelSelected(AiModel model) {
+                updatePinnedSummary();
+                if (listener != null) listener.onSettingsSaved();
+                dismiss();
+            }
 
-        // Save selected provider key
-        switch (pKey) {
-            case "openrouter": prefManager.setOpenRouterApiKey(key); break;
-            case "gemini": prefManager.setGeminiApiKey(key); break;
-            case "groq": prefManager.setGroqApiKey(key); break;
-            case "nim": prefManager.setNimApiKey(key); break;
-            case "openai": prefManager.setOpenAiApiKey(key); break;
-            case "custom":
-                prefManager.setCustomApiKey(key);
-                prefManager.setCustomBaseUrl(editCustomUrl.getText().toString().trim());
-                break;
-        }
+            @Override
+            public void onOpenSettingsRequested() {}
 
-        prefManager.setActiveProvider(pKey);
-        prefManager.setVoiceAutoSpeakEnabled(switchVoiceAutoSpeak.isChecked());
-        prefManager.savePinnedModels(modelsList);
-
-        Toast.makeText(requireContext(), "Settings saved successfully!", Toast.LENGTH_SHORT).show();
-
-        if (listener != null) {
-            listener.onSettingsSaved();
-        }
-        dismiss();
+            @Override
+            public void onModelsUpdated() {
+                updatePinnedSummary();
+                if (listener != null) listener.onSettingsSaved();
+            }
+        });
+        librarySheet.show(getParentFragmentManager(), "ModelLibrarySheet");
     }
 
-    static class ModelSettingAdapter extends RecyclerView.Adapter<ModelSettingAdapter.ViewHolder> {
-        private final List<AiModel> models;
+    private List<ProviderItem> getProviderItems() {
+        List<ProviderItem> items = new ArrayList<>();
+        items.add(new ProviderItem("openrouter", "OpenRouter", "Free & paid models: Llama, DeepSeek, Qwen"));
+        items.add(new ProviderItem("groq", "Groq", "Ultra-fast free inference: Llama 3.3, 3.1"));
+        items.add(new ProviderItem("gemini", "Google Gemini", "Direct Google AI: Gemini 2.0 Flash, 1.5 Pro"));
+        items.add(new ProviderItem("deepseek", "DeepSeek", "DeepSeek V3 (Chat) & R1 (Reasoner)"));
+        items.add(new ProviderItem("xai", "xAI (Grok)", "Grok 2, Grok Vision"));
+        items.add(new ProviderItem("anthropic", "Anthropic", "Claude 3.5 Sonnet, Claude 3.5 Haiku"));
+        items.add(new ProviderItem("openai", "OpenAI", "ChatGPT GPT-4o, GPT-4o Mini"));
+        items.add(new ProviderItem("fireworks", "Fireworks AI", "High-speed open model inference"));
+        items.add(new ProviderItem("custom", "Custom Endpoint", "Local AI: Ollama, LM Studio, vLLM"));
+        return items;
+    }
 
-        public ModelSettingAdapter(List<AiModel> models) {
-            this.models = models;
+    static class ProviderItem {
+        String key;
+        String title;
+        String subtitle;
+        boolean isExpanded = false;
+
+        public ProviderItem(String key, String title, String subtitle) {
+            this.key = key;
+            this.title = title;
+            this.subtitle = subtitle;
+        }
+    }
+
+    class ProviderAdapter extends RecyclerView.Adapter<ProviderAdapter.ViewHolder> {
+        private final List<ProviderItem> items;
+
+        public ProviderAdapter(List<ProviderItem> items) {
+            this.items = items;
         }
 
         @NonNull
         @Override
         public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-            View v = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_pinned_model_setting, parent, false);
+            View v = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_provider_setting, parent, false);
             return new ViewHolder(v);
         }
 
         @Override
         public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
-            AiModel m = models.get(position);
-            holder.txtName.setText(m.getDisplayName());
-            holder.txtId.setText(m.getId() + " (" + m.getProvider() + ")");
-            holder.badgeFree.setVisibility(m.isFree() ? View.VISIBLE : View.GONE);
+            ProviderItem item = items.get(position);
+            holder.txtTitle.setText(item.title);
 
-            holder.checkPinned.setOnCheckedChangeListener(null);
-            holder.checkPinned.setChecked(m.isPinned());
-            holder.checkPinned.setOnCheckedChangeListener((btn, isChecked) -> {
-                m.setPinned(isChecked);
+            String savedKey = prefManager.getApiKey(item.key);
+            boolean hasKey = !savedKey.isEmpty();
+
+            // Status dot
+            if (hasKey) {
+                holder.viewStatusDot.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.status_active));
+                holder.txtKeyPreview.setText(PreferenceManager.maskApiKey(savedKey));
+                holder.txtKeyPreview.setTextColor(ContextCompat.getColor(requireContext(), R.color.text_primary));
+            } else {
+                holder.viewStatusDot.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.status_inactive));
+                holder.txtKeyPreview.setText("Paste " + item.title + " key");
+                holder.txtKeyPreview.setTextColor(ContextCompat.getColor(requireContext(), R.color.text_muted));
+            }
+
+            // Expanded state
+            holder.layoutExpanded.setVisibility(item.isExpanded ? View.VISIBLE : View.GONE);
+            holder.imgChevron.setRotation(item.isExpanded ? 180f : 0f);
+
+            // Pre-fill inputs
+            holder.editKey.setText(savedKey);
+            if ("custom".equalsIgnoreCase(item.key)) {
+                holder.layoutCustomBaseUrl.setVisibility(View.VISIBLE);
+                holder.editCustomBaseUrl.setText(prefManager.getCustomBaseUrl());
+            } else {
+                holder.layoutCustomBaseUrl.setVisibility(View.GONE);
+            }
+
+            // Expand/collapse toggle
+            holder.layoutRowHeader.setOnClickListener(v -> {
+                item.isExpanded = !item.isExpanded;
+                notifyItemChanged(position);
+            });
+
+            // Save & Fetch Button
+            holder.btnSaveProviderKey.setOnClickListener(v -> {
+                String inputKey = holder.editKey.getText() != null ? holder.editKey.getText().toString().trim() : "";
+                prefManager.setApiKey(item.key, inputKey);
+
+                if ("custom".equalsIgnoreCase(item.key) && holder.editCustomBaseUrl.getText() != null) {
+                    prefManager.setCustomBaseUrl(holder.editCustomBaseUrl.getText().toString().trim());
+                }
+
+                // If no active provider set, make this provider active
+                if (prefManager.getActiveProvider().isEmpty()) {
+                    prefManager.setActiveProvider(item.key);
+                }
+
+                notifyItemChanged(position);
+
+                holder.progressFetch.setVisibility(View.VISIBLE);
+                aiService.fetchAvailableModels(item.key, inputKey, new AiService.ModelFetchCallback() {
+                    @Override
+                    public void onSuccess(List<AiModel> models) {
+                        if (isAdded()) {
+                            holder.progressFetch.setVisibility(View.GONE);
+                            Toast.makeText(requireContext(), "Saved! Fetched " + models.size() + " models.", Toast.LENGTH_SHORT).show();
+                            openModelLibrary(item.key);
+                        }
+                    }
+
+                    @Override
+                    public void onError(String error) {
+                        if (isAdded()) {
+                            holder.progressFetch.setVisibility(View.GONE);
+                            Toast.makeText(requireContext(), "Key saved! (" + error + ")", Toast.LENGTH_SHORT).show();
+                            openModelLibrary(item.key);
+                        }
+                    }
+                });
+            });
+
+            // Search Models for this Provider Button
+            holder.btnSearchModelsForProvider.setOnClickListener(v -> {
+                openModelLibrary(item.key);
             });
         }
 
         @Override
         public int getItemCount() {
-            return models.size();
+            return items.size();
         }
 
-        static class ViewHolder extends RecyclerView.ViewHolder {
-            CheckBox checkPinned;
-            TextView txtName, txtId, badgeFree;
+        class ViewHolder extends RecyclerView.ViewHolder {
+            View viewStatusDot;
+            TextView txtTitle, txtKeyPreview;
+            ImageView imgChevron;
+            LinearLayout layoutRowHeader, layoutExpanded;
+            TextInputLayout layoutCustomBaseUrl, layoutKeyInput;
+            TextInputEditText editCustomBaseUrl, editKey;
+            ProgressBar progressFetch;
+            MaterialButton btnSearchModelsForProvider, btnSaveProviderKey;
 
             public ViewHolder(@NonNull View itemView) {
                 super(itemView);
-                checkPinned = itemView.findViewById(R.id.checkModelPinned);
-                txtName = itemView.findViewById(R.id.txtSettingModelName);
-                txtId = itemView.findViewById(R.id.txtSettingModelId);
-                badgeFree = itemView.findViewById(R.id.badgeSettingFree);
+                viewStatusDot = itemView.findViewById(R.id.viewStatusDot);
+                txtTitle = itemView.findViewById(R.id.txtProviderTitle);
+                txtKeyPreview = itemView.findViewById(R.id.txtKeyPreview);
+                imgChevron = itemView.findViewById(R.id.imgChevron);
+                layoutRowHeader = itemView.findViewById(R.id.layoutRowHeader);
+                layoutExpanded = itemView.findViewById(R.id.layoutExpanded);
+                layoutCustomBaseUrl = itemView.findViewById(R.id.layoutCustomBaseUrl);
+                layoutKeyInput = itemView.findViewById(R.id.layoutKeyInput);
+                editCustomBaseUrl = itemView.findViewById(R.id.editCustomBaseUrl);
+                editKey = itemView.findViewById(R.id.editProviderKey);
+                progressFetch = itemView.findViewById(R.id.progressProviderFetch);
+                btnSearchModelsForProvider = itemView.findViewById(R.id.btnSearchModelsForProvider);
+                btnSaveProviderKey = itemView.findViewById(R.id.btnSaveProviderKey);
             }
         }
     }

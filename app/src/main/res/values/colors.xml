@@ -44,5 +44,7 @@
     <color name="white">#FFFFFF</color>
     <color name="black">#000000</color>
     <color name="transparent">#00000000</color>
+    <color name="status_active">#10B981</color>
+    <color name="status_inactive">#52525B</color>
     <color name="divider">#27272A</color>
 </resources>

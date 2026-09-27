@@ -44,7 +44,7 @@ public class AiService {
     private final PreferenceManager prefManager;
     private final OkHttpClient client;
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
-    private final ExecutorService executor = Executors.newFixedThreadPool(3);
+    private final ExecutorService executor = Executors.newFixedThreadPool(4);
 
     public AiService(Context context) {
         this.prefManager = new PreferenceManager(context);
@@ -61,16 +61,22 @@ public class AiService {
         executor.execute(() -> {
             String provider = prefManager.getActiveProvider();
             String modelId = prefManager.getActiveModelId();
-            String apiKey = getApiKeyForProvider(provider);
 
-            // If no key entered for cloud provider, use smart assistant mock response
+            if (provider == null || provider.isEmpty() || modelId == null || modelId.isEmpty()) {
+                mainHandler.post(() -> callback.onError("No AI model selected. Please open Settings ⚙️ to configure your API key and pin models."));
+                return;
+            }
+
+            String apiKey = prefManager.getApiKey(provider);
             if (apiKey.isEmpty() && !"custom".equalsIgnoreCase(provider)) {
-                runDemoAssistantResponse(userPrompt, modelId, callback);
+                mainHandler.post(() -> callback.onError("No API key configured for " + provider.toUpperCase() + ".\nPlease open Settings ⚙️ to enter your key."));
                 return;
             }
 
             try {
-                if ("gemini".equalsIgnoreCase(provider) && !modelId.startsWith("http")) {
+                if ("anthropic".equalsIgnoreCase(provider)) {
+                    sendAnthropicRequest(apiKey, modelId, conversationHistory, userPrompt, callback);
+                } else if ("gemini".equalsIgnoreCase(provider)) {
                     sendGeminiNativeRequest(apiKey, modelId, conversationHistory, userPrompt, callback);
                 } else {
                     sendOpenAiCompatibleRequest(provider, apiKey, modelId, conversationHistory, userPrompt, callback);
@@ -81,26 +87,19 @@ public class AiService {
         });
     }
 
-    private String getApiKeyForProvider(String provider) {
-        switch (provider.toLowerCase()) {
-            case "gemini": return prefManager.getGeminiApiKey();
-            case "openrouter": return prefManager.getOpenRouterApiKey();
-            case "groq": return prefManager.getGroqApiKey();
-            case "nim": return prefManager.getNimApiKey();
-            case "openai": return prefManager.getOpenAiApiKey();
-            case "custom": return prefManager.getCustomApiKey();
-            default: return "";
-        }
-    }
-
     private String getEndpointForProvider(String provider) {
         switch (provider.toLowerCase()) {
             case "openrouter": return "https://openrouter.ai/api/v1/chat/completions";
             case "groq": return "https://api.groq.com/openai/v1/chat/completions";
-            case "nim": return "https://integrate.api.nvidia.com/v1/chat/completions";
+            case "deepseek": return "https://api.deepseek.com/chat/completions";
+            case "xai": return "https://api.x.ai/v1/chat/completions";
             case "openai": return "https://api.openai.com/v1/chat/completions";
+            case "fireworks": return "https://api.fireworks.ai/inference/v1/chat/completions";
             case "gemini": return "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions";
-            case "custom": return prefManager.getCustomBaseUrl() + (prefManager.getCustomBaseUrl().endsWith("/") ? "" : "/") + "chat/completions";
+            case "custom":
+                String customUrl = prefManager.getCustomBaseUrl();
+                if (!customUrl.endsWith("/")) customUrl += "/";
+                return customUrl + "chat/completions";
             default: return "https://openrouter.ai/api/v1/chat/completions";
         }
     }
@@ -116,7 +115,7 @@ public class AiService {
             // System prompt
             JSONObject sysMsg = new JSONObject();
             sysMsg.put("role", "system");
-            sysMsg.put("content", "You are an intelligent, concise, and helpful personal AI assistant. You help manage tasks, notes, reminders, and answer queries cleanly.");
+            sysMsg.put("content", "You are an intelligent, concise, and helpful personal AI assistant. You help manage tasks, notes, reminders, and answer user queries cleanly.");
             messages.put(sysMsg);
 
             // History
@@ -142,8 +141,11 @@ public class AiService {
             Request.Builder reqBuilder = new Request.Builder()
                     .url(getEndpointForProvider(provider))
                     .post(RequestBody.create(body.toString(), JSON_MEDIA))
-                    .addHeader("Authorization", "Bearer " + apiKey)
                     .addHeader("Content-Type", "application/json");
+
+            if (!apiKey.isEmpty()) {
+                reqBuilder.addHeader("Authorization", "Bearer " + apiKey);
+            }
 
             if ("openrouter".equalsIgnoreCase(provider)) {
                 reqBuilder.addHeader("HTTP-Referer", "https://personalassistant.mitaoe.edu");
@@ -153,7 +155,7 @@ public class AiService {
             Response response = client.newCall(reqBuilder.build()).execute();
             if (!response.isSuccessful()) {
                 String errBody = response.body() != null ? response.body().string() : "Error " + response.code();
-                mainHandler.post(() -> callback.onError("Provider error (" + response.code() + "): " + errBody));
+                mainHandler.post(() -> callback.onError(provider.toUpperCase() + " error (" + response.code() + "): " + errBody));
                 return;
             }
 
@@ -200,10 +202,66 @@ public class AiService {
         }
     }
 
+    private void sendAnthropicRequest(String apiKey, String modelId,
+                                      List<ChatMessage> history, String userPrompt, StreamCallback callback) {
+        try {
+            JSONObject body = new JSONObject();
+            body.put("model", modelId);
+            body.put("max_tokens", 2048);
+
+            JSONArray messages = new JSONArray();
+            if (history != null) {
+                int start = Math.max(0, history.size() - 6);
+                for (int i = start; i < history.size(); i++) {
+                    ChatMessage msg = history.get(i);
+                    JSONObject chatObj = new JSONObject();
+                    chatObj.put("role", msg.isUser() ? "user" : "assistant");
+                    chatObj.put("content", msg.getText());
+                    messages.put(chatObj);
+                }
+            }
+            JSONObject currentMsg = new JSONObject();
+            currentMsg.put("role", "user");
+            currentMsg.put("content", userPrompt);
+            messages.put(currentMsg);
+
+            body.put("messages", messages);
+
+            Request request = new Request.Builder()
+                    .url("https://api.anthropic.com/v1/messages")
+                    .post(RequestBody.create(body.toString(), JSON_MEDIA))
+                    .addHeader("x-api-key", apiKey)
+                    .addHeader("anthropic-version", "2023-06-01")
+                    .addHeader("content-type", "application/json")
+                    .build();
+
+            Response response = client.newCall(request).execute();
+            if (!response.isSuccessful()) {
+                String err = response.body() != null ? response.body().string() : "Error " + response.code();
+                mainHandler.post(() -> callback.onError("Anthropic error (" + response.code() + "): " + err));
+                return;
+            }
+
+            String responseString = response.body() != null ? response.body().string() : "";
+            JSONObject resJson = new JSONObject(responseString);
+            JSONArray content = resJson.optJSONArray("content");
+            if (content != null && content.length() > 0) {
+                String reply = content.getJSONObject(0).optString("text", "");
+                simulateTypewriter(reply, callback);
+            } else {
+                mainHandler.post(() -> callback.onError("No response text from Anthropic."));
+            }
+
+        } catch (Exception e) {
+            mainHandler.post(() -> callback.onError("Anthropic error: " + e.getMessage()));
+        }
+    }
+
     private void sendGeminiNativeRequest(String apiKey, String modelId,
                                         List<ChatMessage> history, String userPrompt, StreamCallback callback) {
         try {
-            String url = "https://generativelanguage.googleapis.com/v1beta/models/" + modelId + ":generateContent?key=" + apiKey;
+            String cleanModel = modelId.startsWith("models/") ? modelId.substring(7) : modelId;
+            String url = "https://generativelanguage.googleapis.com/v1beta/models/" + cleanModel + ":generateContent?key=" + apiKey;
 
             JSONObject root = new JSONObject();
             JSONArray contents = new JSONArray();
@@ -241,7 +299,6 @@ public class AiService {
                 JSONArray parts = content.getJSONArray("parts");
                 String reply = parts.getJSONObject(0).getString("text");
 
-                // Simulate typewriter stream for consistency
                 simulateTypewriter(reply, callback);
             } else {
                 mainHandler.post(() -> callback.onError("No candidates returned by Gemini."));
@@ -250,23 +307,6 @@ public class AiService {
         } catch (Exception e) {
             mainHandler.post(() -> callback.onError("Gemini Error: " + e.getMessage()));
         }
-    }
-
-    private void runDemoAssistantResponse(String userPrompt, String modelId, StreamCallback callback) {
-        String answer;
-        String lower = userPrompt.toLowerCase();
-
-        if (lower.contains("hello") || lower.contains("hi") || lower.contains("who are you")) {
-            answer = "Hello! I am your **AI Personal Assistant**.\n\nI can help you with:\n- ⏰ Scheduling tasks and reminders with alerts\n- 📝 Taking, organizing, and summarizing notes\n- 💡 Answering your queries with free AI models\n\n*(Note: You are currently running in **Demo Mode**. You can connect your free OpenRouter or Gemini API key in **Settings ⚙️** at any time!)*";
-        } else if (lower.contains("task") || lower.contains("todo")) {
-            answer = "You can manage your tasks easily! Just tell me things like:\n- *\"Add task: prepare project submission with high priority\"*\n- *\"Remind me to call John tomorrow at 5 PM\"*\n\nI will automatically parse the date, time, and priority, and alert you with an alarm!";
-        } else if (lower.contains("note")) {
-            answer = "I can keep track of all your notes! Try saying:\n- *\"Note: Grocery list for the week\"*\n- Or open the **Notes** tab to generate AI summaries and action items.";
-        } else {
-            answer = "Here is what I found for you:\n\n**" + userPrompt + "**\n\nTo unlock live internet reasoning with **" + modelId + "**, tap the **Settings (⚙️)** icon in the top right to paste your free OpenRouter, Gemini, or Groq API key!";
-        }
-
-        simulateTypewriter(answer, callback);
     }
 
     private void simulateTypewriter(String text, StreamCallback callback) {
@@ -279,7 +319,7 @@ public class AiService {
             final String textSoFar = current.toString();
             mainHandler.post(() -> callback.onToken(token, textSoFar));
             try {
-                Thread.sleep(25);
+                Thread.sleep(20);
             } catch (InterruptedException ignored) {}
         }
 
@@ -290,45 +330,201 @@ public class AiService {
     public void fetchAvailableModels(String provider, String apiKey, ModelFetchCallback callback) {
         executor.execute(() -> {
             try {
-                String url;
-                if ("groq".equalsIgnoreCase(provider)) {
-                    url = "https://api.groq.com/openai/v1/models";
-                } else if ("openrouter".equalsIgnoreCase(provider)) {
-                    url = "https://openrouter.ai/api/v1/models";
-                } else if ("openai".equalsIgnoreCase(provider)) {
-                    url = "https://api.openai.com/v1/models";
-                } else {
-                    mainHandler.post(() -> callback.onError("Live model fetching is supported for OpenRouter, Groq, and OpenAI."));
-                    return;
-                }
-
-                Request request = new Request.Builder()
-                        .url(url)
-                        .get()
-                        .addHeader("Authorization", "Bearer " + apiKey)
-                        .build();
-
-                Response response = client.newCall(request).execute();
-                if (!response.isSuccessful()) {
-                    mainHandler.post(() -> callback.onError("Fetch error (" + response.code() + ")"));
-                    return;
-                }
-
-                String json = response.body() != null ? response.body().string() : "";
-                JSONObject obj = new JSONObject(json);
-                JSONArray data = obj.optJSONArray("data");
-
+                String pKey = provider.toLowerCase();
                 List<AiModel> result = new ArrayList<>();
-                if (data != null) {
-                    for (int i = 0; i < data.length(); i++) {
-                        JSONObject m = data.getJSONObject(i);
-                        String id = m.getString("id");
-                        String name = m.optString("name", id);
-                        boolean isFree = id.contains(":free") || id.contains("free") || "groq".equalsIgnoreCase(provider);
-                        String desc = isFree ? "Free tier model" : "Standard model";
-                        result.add(new AiModel(id, name, provider, isFree, false, desc));
+
+                if ("openrouter".equals(pKey)) {
+                    String url = "https://openrouter.ai/api/v1/models";
+                    Request.Builder rb = new Request.Builder().url(url).get();
+                    if (!apiKey.isEmpty()) rb.addHeader("Authorization", "Bearer " + apiKey);
+
+                    Response response = client.newCall(rb.build()).execute();
+                    if (!response.isSuccessful()) {
+                        mainHandler.post(() -> callback.onError("OpenRouter fetch error (" + response.code() + ")"));
+                        return;
+                    }
+                    String json = response.body() != null ? response.body().string() : "";
+                    JSONObject obj = new JSONObject(json);
+                    JSONArray data = obj.optJSONArray("data");
+                    if (data != null) {
+                        for (int i = 0; i < data.length(); i++) {
+                            JSONObject m = data.getJSONObject(i);
+                            String id = m.getString("id");
+                            String name = m.optString("name", id);
+                            JSONObject pricing = m.optJSONObject("pricing");
+                            boolean isFree = id.contains(":free") || id.toLowerCase().contains("free");
+                            if (pricing != null) {
+                                String promptCost = pricing.optString("prompt", "1");
+                                if ("0".equals(promptCost) || "0.0".equals(promptCost)) isFree = true;
+                            }
+                            String desc = isFree ? "Free OpenRouter Model" : "OpenRouter Cloud";
+                            result.add(new AiModel(id, name, "openrouter", isFree, false, desc));
+                        }
+                    }
+                } else if ("groq".equals(pKey)) {
+                    String url = "https://api.groq.com/openai/v1/models";
+                    Request request = new Request.Builder()
+                            .url(url)
+                            .get()
+                            .addHeader("Authorization", "Bearer " + apiKey)
+                            .build();
+
+                    Response response = client.newCall(request).execute();
+                    if (!response.isSuccessful()) {
+                        mainHandler.post(() -> callback.onError("Groq fetch error (" + response.code() + ")"));
+                        return;
+                    }
+                    String json = response.body() != null ? response.body().string() : "";
+                    JSONObject obj = new JSONObject(json);
+                    JSONArray data = obj.optJSONArray("data");
+                    if (data != null) {
+                        for (int i = 0; i < data.length(); i++) {
+                            JSONObject m = data.getJSONObject(i);
+                            String id = m.getString("id");
+                            result.add(new AiModel(id, id, "groq", true, false, "Ultra-fast Groq LPU"));
+                        }
+                    }
+                } else if ("gemini".equals(pKey)) {
+                    String url = "https://generativelanguage.googleapis.com/v1beta/models?key=" + apiKey;
+                    Request request = new Request.Builder().url(url).get().build();
+
+                    Response response = client.newCall(request).execute();
+                    if (!response.isSuccessful()) {
+                        mainHandler.post(() -> callback.onError("Gemini fetch error (" + response.code() + ")"));
+                        return;
+                    }
+                    String json = response.body() != null ? response.body().string() : "";
+                    JSONObject obj = new JSONObject(json);
+                    JSONArray models = obj.optJSONArray("models");
+                    if (models != null) {
+                        for (int i = 0; i < models.length(); i++) {
+                            JSONObject m = models.getJSONObject(i);
+                            String rawName = m.getString("name");
+                            String id = rawName.startsWith("models/") ? rawName.substring(7) : rawName;
+                            String dispName = m.optString("displayName", id);
+                            String desc = m.optString("description", "Google AI Model");
+                            // Filter only generateContent models
+                            JSONArray methods = m.optJSONArray("supportedGenerationMethods");
+                            boolean canGen = false;
+                            if (methods != null) {
+                                for (int j = 0; j < methods.length(); j++) {
+                                    if ("generateContent".equalsIgnoreCase(methods.getString(j))) {
+                                        canGen = true;
+                                        break;
+                                    }
+                                }
+                            }
+                            if (canGen) {
+                                boolean isFree = id.contains("flash") || id.contains("exp");
+                                result.add(new AiModel(id, dispName, "gemini", isFree, false, desc));
+                            }
+                        }
+                    }
+                } else if ("deepseek".equals(pKey)) {
+                    String url = "https://api.deepseek.com/models";
+                    Request request = new Request.Builder()
+                            .url(url)
+                            .get()
+                            .addHeader("Authorization", "Bearer " + apiKey)
+                            .build();
+
+                    Response response = client.newCall(request).execute();
+                    if (response.isSuccessful()) {
+                        String json = response.body() != null ? response.body().string() : "";
+                        JSONObject obj = new JSONObject(json);
+                        JSONArray data = obj.optJSONArray("data");
+                        if (data != null && data.length() > 0) {
+                            for (int i = 0; i < data.length(); i++) {
+                                JSONObject m = data.getJSONObject(i);
+                                String id = m.getString("id");
+                                result.add(new AiModel(id, id.equalsIgnoreCase("deepseek-chat") ? "DeepSeek V3 (Chat)" : (id.equalsIgnoreCase("deepseek-reasoner") ? "DeepSeek R1 (Reasoner)" : id), "deepseek", false, false, "DeepSeek Intelligence"));
+                            }
+                        }
+                    } else {
+                        // Fallback flagship models
+                        result.add(new AiModel("deepseek-chat", "DeepSeek V3 (Chat)", "deepseek", false, false, "DeepSeek flagship general model"));
+                        result.add(new AiModel("deepseek-reasoner", "DeepSeek R1 (Reasoner)", "deepseek", false, false, "DeepSeek advanced reasoning model"));
+                    }
+                } else if ("anthropic".equals(pKey)) {
+                    result.add(new AiModel("claude-3-5-sonnet-20241022", "Claude 3.5 Sonnet", "anthropic", false, false, "Flagship Anthropic model"));
+                    result.add(new AiModel("claude-3-5-haiku-20241022", "Claude 3.5 Haiku", "anthropic", false, false, "Ultra-fast lightweight Claude"));
+                    result.add(new AiModel("claude-3-opus-20240229", "Claude 3 Opus", "anthropic", false, false, "Deep complex reasoning"));
+                } else if ("xai".equals(pKey)) {
+                    result.add(new AiModel("grok-2-1212", "Grok 2", "xai", false, false, "xAI flagship Grok intelligence"));
+                    result.add(new AiModel("grok-2-vision-1212", "Grok 2 Vision", "xai", false, false, "Multimodal visual reasoning"));
+                    result.add(new AiModel("grok-beta", "Grok Beta", "xai", false, false, "Latest experimental Grok"));
+                } else if ("fireworks".equals(pKey)) {
+                    String url = "https://api.fireworks.ai/inference/v1/models";
+                    Request request = new Request.Builder()
+                            .url(url)
+                            .get()
+                            .addHeader("Authorization", "Bearer " + apiKey)
+                            .build();
+
+                    Response response = client.newCall(request).execute();
+                    if (!response.isSuccessful()) {
+                        mainHandler.post(() -> callback.onError("Fireworks fetch error (" + response.code() + ")"));
+                        return;
+                    }
+                    String json = response.body() != null ? response.body().string() : "";
+                    JSONObject obj = new JSONObject(json);
+                    JSONArray data = obj.optJSONArray("data");
+                    if (data != null) {
+                        for (int i = 0; i < data.length(); i++) {
+                            JSONObject m = data.getJSONObject(i);
+                            String id = m.getString("id");
+                            result.add(new AiModel(id, id, "fireworks", false, false, "Fireworks Fast Inference"));
+                        }
+                    }
+                } else if ("openai".equals(pKey)) {
+                    String url = "https://api.openai.com/v1/models";
+                    Request request = new Request.Builder()
+                            .url(url)
+                            .get()
+                            .addHeader("Authorization", "Bearer " + apiKey)
+                            .build();
+
+                    Response response = client.newCall(request).execute();
+                    if (!response.isSuccessful()) {
+                        mainHandler.post(() -> callback.onError("OpenAI fetch error (" + response.code() + ")"));
+                        return;
+                    }
+                    String json = response.body() != null ? response.body().string() : "";
+                    JSONObject obj = new JSONObject(json);
+                    JSONArray data = obj.optJSONArray("data");
+                    if (data != null) {
+                        for (int i = 0; i < data.length(); i++) {
+                            JSONObject m = data.getJSONObject(i);
+                            String id = m.getString("id");
+                            if (id.startsWith("gpt-") || id.startsWith("o1")) {
+                                result.add(new AiModel(id, id, "openai", false, false, "OpenAI ChatGPT model"));
+                            }
+                        }
+                    }
+                } else if ("custom".equals(pKey)) {
+                    String customUrl = prefManager.getCustomBaseUrl();
+                    if (!customUrl.endsWith("/")) customUrl += "/";
+                    String url = customUrl + "models";
+                    Request.Builder rb = new Request.Builder().url(url).get();
+                    if (!apiKey.isEmpty()) rb.addHeader("Authorization", "Bearer " + apiKey);
+
+                    Response response = client.newCall(rb.build()).execute();
+                    if (response.isSuccessful()) {
+                        String json = response.body() != null ? response.body().string() : "";
+                        JSONObject obj = new JSONObject(json);
+                        JSONArray data = obj.optJSONArray("data");
+                        if (data != null) {
+                            for (int i = 0; i < data.length(); i++) {
+                                JSONObject m = data.getJSONObject(i);
+                                String id = m.getString("id");
+                                result.add(new AiModel(id, id, "custom", true, false, "Local / Custom Endpoint"));
+                            }
+                        }
                     }
                 }
+
+                // Cache the fetched models in background
+                prefManager.mergeCachedFetchedModels(result);
 
                 mainHandler.post(() -> callback.onSuccess(result));
             } catch (Exception e) {
