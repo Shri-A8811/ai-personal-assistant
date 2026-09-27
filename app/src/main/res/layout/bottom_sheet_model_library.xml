@@ -253,11 +253,11 @@
         android:padding="20dp"
         android:visibility="gone">
 
-        <ImageView
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:src="@drawable/ic_search"
-            app:tint="@color/text_muted" />
+        <com.google.android.material.imageview.ShapeableImageView
+            android:layout_width="56dp"
+            android:layout_height="56dp"
+            android:src="@drawable/app_logo"
+            app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Full" />
 
         <TextView
             android:id="@+id/txtLibEmptyTitle"
@@ -275,7 +275,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
             android:gravity="center"
-            android:text="Try adjusting your search query, or add your API key in Settings to fetch live models."
+            android:text="No models matched your search or no providers configured. Add an API key in Settings to fetch live models."
             android:textColor="@color/text_muted"
             android:textSize="12sp" />
 
@@ -287,6 +287,40 @@
             android:layout_marginTop="16dp"
             android:text="⚙️ Open Provider Settings"
             android:textColor="@color/text_primary" />
+    </LinearLayout>
+
+    <!-- Quick Add Model by Exact ID Bar -->
+    <LinearLayout
+        android:id="@+id/layoutQuickAddModel"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <EditText
+            android:id="@+id/editQuickModelId"
+            android:layout_width="0dp"
+            android:layout_height="40dp"
+            android:layout_weight="1"
+            android:background="@drawable/bg_input_box"
+            android:hint="Type model ID (e.g. meta-llama/llama-3.3-70b-instruct:free)..."
+            android:paddingHorizontal="12dp"
+            android:textColor="@color/text_primary"
+            android:textColorHint="@color/text_muted"
+            android:textSize="11sp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnQuickPinModel"
+            style="@style/Widget.Material3.Button.TonalButton"
+            android:layout_width="wrap_content"
+            android:layout_height="38dp"
+            android:layout_marginStart="8dp"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            android:text="+ Pin"
+            android:textColor="@color/text_primary"
+            android:textSize="11sp" />
     </LinearLayout>
 
     <!-- Bottom Done Button -->

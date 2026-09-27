@@ -31,12 +31,26 @@ public class PreferenceManager {
     private static final String KEY_PINNED_MODELS = "pinned_models_json";
     private static final String KEY_FETCHED_MODELS_CACHE = "fetched_models_cache_json";
     private static final String KEY_VOICE_AUTO_SPEAK = "voice_auto_speak";
+    private static final String KEY_PREFS_VERSION = "prefs_schema_version";
+    private static final int CURRENT_VERSION = 5;
 
     private final SharedPreferences prefs;
     private final Gson gson = new Gson();
 
     public PreferenceManager(Context context) {
         this.prefs = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
+        // Wipe legacy hardcoded presets from prior app installs
+        int ver = prefs.getInt(KEY_PREFS_VERSION, 0);
+        if (ver < CURRENT_VERSION) {
+            prefs.edit()
+                .remove(KEY_PINNED_MODELS)
+                .remove(KEY_FETCHED_MODELS_CACHE)
+                .remove(KEY_ACTIVE_MODEL_ID)
+                .remove(KEY_ACTIVE_MODEL_NAME)
+                .remove(KEY_ACTIVE_PROVIDER)
+                .putInt(KEY_PREFS_VERSION, CURRENT_VERSION)
+                .apply();
+        }
     }
 
     // Generic Provider API Key Getter & Setter
@@ -69,6 +83,22 @@ public class PreferenceManager {
             case "fireworks": setFireworksApiKey(key); break;
             case "custom": setCustomApiKey(key); break;
         }
+    }
+
+    public boolean hasApiKeyFor(String provider) {
+        String key = getApiKey(provider);
+        return key != null && !key.trim().isEmpty();
+    }
+
+    public List<String> getConfiguredProviders() {
+        List<String> list = new ArrayList<>();
+        String[] all = {"openrouter", "groq", "gemini", "deepseek", "xai", "anthropic", "openai", "fireworks", "custom"};
+        for (String p : all) {
+            if (hasApiKeyFor(p)) {
+                list.add(p);
+            }
+        }
+        return list;
     }
 
     public static String maskApiKey(String key) {

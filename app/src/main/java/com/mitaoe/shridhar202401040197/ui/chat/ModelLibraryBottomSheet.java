@@ -42,10 +42,10 @@ public class ModelLibraryBottomSheet extends BottomSheetDialogFragment {
     private AiService aiService;
     private OnModelLibraryListener listener;
 
-    private EditText editLibSearch;
+    private EditText editLibSearch, editQuickModelId;
     private ImageView btnLibClearSearch;
     private TextView txtLibModelCount;
-    private MaterialButton btnLibRefresh, btnLibDone, btnLibGoToSettings;
+    private MaterialButton btnLibRefresh, btnLibDone, btnLibGoToSettings, btnQuickPinModel;
     private ChipGroup chipGroupFilters;
     private ProgressBar progressLibLoading;
     private RecyclerView recyclerLibModels;
@@ -85,11 +85,14 @@ public class ModelLibraryBottomSheet extends BottomSheetDialogFragment {
         progressLibLoading = view.findViewById(R.id.progressLibLoading);
         recyclerLibModels = view.findViewById(R.id.recyclerLibModels);
         layoutLibEmpty = view.findViewById(R.id.layoutLibEmpty);
+        editQuickModelId = view.findViewById(R.id.editQuickModelId);
+        btnQuickPinModel = view.findViewById(R.id.btnQuickPinModel);
 
         recyclerLibModels.setLayoutManager(new LinearLayoutManager(requireContext()));
         adapter = new ModelLibraryAdapter();
         recyclerLibModels.setAdapter(adapter);
 
+        setupFilterChipVisibility(view);
         loadModels();
 
         // Search text watcher for real-time filtering
@@ -144,7 +147,50 @@ public class ModelLibraryBottomSheet extends BottomSheetDialogFragment {
             }
         });
 
+        // Quick Pin Model by Exact ID
+        btnQuickPinModel.setOnClickListener(v -> {
+            String customId = editQuickModelId.getText() != null ? editQuickModelId.getText().toString().trim() : "";
+            if (customId.isEmpty()) return;
+
+            String provider = prefManager.getActiveProvider();
+            if (provider.isEmpty()) {
+                List<String> conf = prefManager.getConfiguredProviders();
+                provider = !conf.isEmpty() ? conf.get(0) : "openrouter";
+            }
+            boolean isFree = customId.toLowerCase().contains("free");
+            AiModel manualModel = new AiModel(customId, customId, provider, isFree, true, "Pinned Model");
+            prefManager.pinModel(manualModel);
+            if (prefManager.getActiveModelId().isEmpty()) {
+                prefManager.setActiveProvider(provider);
+                prefManager.setActiveModelId(customId);
+                prefManager.setActiveModelName(customId);
+            }
+            editQuickModelId.setText("");
+            Toast.makeText(requireContext(), "📌 Pinned " + customId, Toast.LENGTH_SHORT).show();
+            loadModels();
+            if (listener != null) listener.onModelsUpdated();
+        });
+
         return view;
+    }
+
+    private void setupFilterChipVisibility(View view) {
+        setChipVisibility(view, R.id.chipOpenRouter, "openrouter");
+        setChipVisibility(view, R.id.chipGroq, "groq");
+        setChipVisibility(view, R.id.chipGemini, "gemini");
+        setChipVisibility(view, R.id.chipDeepSeek, "deepseek");
+        setChipVisibility(view, R.id.chipXai, "xai");
+        setChipVisibility(view, R.id.chipAnthropic, "anthropic");
+        setChipVisibility(view, R.id.chipOpenAi, "openai");
+        setChipVisibility(view, R.id.chipFireworks, "fireworks");
+        setChipVisibility(view, R.id.chipCustom, "custom");
+    }
+
+    private void setChipVisibility(View view, int chipId, String provider) {
+        View chip = view.findViewById(chipId);
+        if (chip != null) {
+            chip.setVisibility(prefManager.hasApiKeyFor(provider) ? View.VISIBLE : View.GONE);
+        }
     }
 
     private void loadModels() {
@@ -163,7 +209,7 @@ public class ModelLibraryBottomSheet extends BottomSheetDialogFragment {
             }
             if (!found) {
                 p.setPinned(true);
-                allModels.add(p);
+                allModels.add(0, p);
             }
         }
 
@@ -175,44 +221,40 @@ public class ModelLibraryBottomSheet extends BottomSheetDialogFragment {
     }
 
     public void refreshLiveModels() {
+        List<String> configured = prefManager.getConfiguredProviders();
+        if (configured.isEmpty()) {
+            progressLibLoading.setVisibility(View.GONE);
+            applyFilter();
+            return;
+        }
+
         progressLibLoading.setVisibility(View.VISIBLE);
+        int[] pendingCount = {configured.size()};
 
-        String[] providers = {"openrouter", "groq", "gemini", "deepseek", "xai", "anthropic", "openai", "fireworks", "custom"};
-        int[] pendingCount = {0};
-
-        for (String p : providers) {
+        for (String p : configured) {
             String key = prefManager.getApiKey(p);
-            // OpenRouter can fetch even with empty key
-            if (!key.isEmpty() || "openrouter".equalsIgnoreCase(p)) {
-                pendingCount[0]++;
-                aiService.fetchAvailableModels(p, key, new AiService.ModelFetchCallback() {
-                    @Override
-                    public void onSuccess(List<AiModel> fetched) {
-                        pendingCount[0]--;
-                        if (isAdded()) {
-                            prefManager.mergeCachedFetchedModels(fetched);
-                            if (pendingCount[0] <= 0) {
-                                progressLibLoading.setVisibility(View.GONE);
-                                loadModels();
-                            }
-                        }
-                    }
-
-                    @Override
-                    public void onError(String error) {
-                        pendingCount[0]--;
-                        if (isAdded() && pendingCount[0] <= 0) {
+            aiService.fetchAvailableModels(p, key, new AiService.ModelFetchCallback() {
+                @Override
+                public void onSuccess(List<AiModel> fetched) {
+                    pendingCount[0]--;
+                    if (isAdded()) {
+                        prefManager.mergeCachedFetchedModels(fetched);
+                        if (pendingCount[0] <= 0) {
                             progressLibLoading.setVisibility(View.GONE);
                             loadModels();
                         }
                     }
-                });
-            }
-        }
+                }
 
-        if (pendingCount[0] == 0) {
-            progressLibLoading.setVisibility(View.GONE);
-            applyFilter();
+                @Override
+                public void onError(String error) {
+                    pendingCount[0]--;
+                    if (isAdded() && pendingCount[0] <= 0) {
+                        progressLibLoading.setVisibility(View.GONE);
+                        loadModels();
+                    }
+                }
+            });
         }
     }
 

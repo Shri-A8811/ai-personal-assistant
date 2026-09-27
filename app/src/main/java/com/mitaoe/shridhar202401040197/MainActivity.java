@@ -13,6 +13,7 @@ import android.widget.Toast;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
@@ -261,9 +262,11 @@ public class MainActivity extends AppCompatActivity {
         ModelSelectorBottomSheet sheet = new ModelSelectorBottomSheet();
         sheet.setOnModelSelectedListener(new ModelSelectorBottomSheet.OnModelSelectedListener() {
             @Override
-            public void onModelSelected(AiModel model) {
+            public void onModelSelected(@Nullable AiModel model) {
                 updateModelPillLabel();
-                Toast.makeText(MainActivity.this, "Switched to " + model.getDisplayName(), Toast.LENGTH_SHORT).show();
+                if (model != null) {
+                    Toast.makeText(MainActivity.this, "Switched to " + model.getDisplayName(), Toast.LENGTH_SHORT).show();
+                }
             }
 
             @Override

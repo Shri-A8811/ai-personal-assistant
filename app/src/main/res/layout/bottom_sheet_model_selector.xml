@@ -9,7 +9,7 @@
 
     <!-- Top Drag Handle -->
     <View
-        android:layout_width="40dp"
+        android:layout_width="38dp"
         android:layout_height="4dp"
         android:layout_gravity="center_horizontal"
         android:layout_marginBottom="16dp"
@@ -27,7 +27,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="Select Chat Model"
+            android:text="Chat Models"
             android:textColor="@color/text_primary"
             android:textSize="18sp"
             android:textStyle="bold" />
@@ -45,10 +45,11 @@
     </LinearLayout>
 
     <TextView
+        android:id="@+id/txtSelectorSubtitle"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="4dp"
-        android:text="Switch between your pinned models or search for new ones:"
+        android:text="Tap to select your active model, or tap 🗑️ to remove:"
         android:textColor="@color/text_muted"
         android:textSize="12sp" />
 
@@ -58,33 +59,33 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="12dp"
-        android:maxHeight="320dp"
+        android:maxHeight="340dp"
         android:overScrollMode="never" />
 
-    <!-- Empty State (No Pinned Models) -->
+    <!-- Empty State (No Models Selected Yet) -->
     <LinearLayout
         android:id="@+id/layoutNoPinnedModels"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
+        android:layout_marginTop="12dp"
         android:gravity="center"
         android:orientation="vertical"
-        android:padding="16dp"
+        android:padding="20dp"
         android:visibility="gone">
 
-        <ImageView
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:src="@drawable/ic_sparkle"
-            app:tint="@color/accent_gemini_blue" />
+        <com.google.android.material.imageview.ShapeableImageView
+            android:layout_width="60dp"
+            android:layout_height="60dp"
+            android:src="@drawable/app_logo"
+            app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Full" />
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:text="No models pinned yet"
+            android:layout_marginTop="12dp"
+            android:text="No Models Selected Yet"
             android:textColor="@color/text_primary"
-            android:textSize="14sp"
+            android:textSize="16sp"
             android:textStyle="bold" />
 
         <TextView
@@ -92,20 +93,51 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
             android:gravity="center"
-            android:text="Add your API key and search from hundreds of free models on OpenRouter, Groq, Gemini, etc."
+            android:text="Connect an API key in Settings (e.g. Free OpenRouter or Gemini) and search to pin your models."
             android:textColor="@color/text_muted"
             android:textSize="12sp" />
+
+        <!-- 2 Action Buttons -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:orientation="vertical">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnEmptySearchModels"
+                style="@style/Widget.Material3.Button.TonalButton"
+                android:layout_width="match_parent"
+                android:layout_height="44dp"
+                android:backgroundTint="@color/accent_gemini_blue"
+                android:text="🔍 Search &amp; Add Models"
+                android:textColor="@color/white"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                app:cornerRadius="22dp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnEmptyOpenSettings"
+                style="@style/Widget.Material3.Button.TextButton"
+                android:layout_width="match_parent"
+                android:layout_height="40dp"
+                android:layout_marginTop="6dp"
+                android:text="⚙️ Configure API Keys in Settings"
+                android:textColor="@color/text_secondary"
+                android:textSize="12sp" />
+        </LinearLayout>
+
     </LinearLayout>
 
-    <!-- Search & Pin More Models Action Button -->
+    <!-- Bottom Action Button When Models Exist -->
     <com.google.android.material.button.MaterialButton
         android:id="@+id/btnSearchAndPinMore"
         style="@style/Widget.Material3.Button.TonalButton"
         android:layout_width="match_parent"
         android:layout_height="44dp"
-        android:layout_marginTop="16dp"
+        android:layout_marginTop="14dp"
         android:backgroundTint="@color/surface_elevated_dark"
-        android:text="🔍 Search &amp; Pin More Models"
+        android:text="🔍 Search &amp; Add More Models"
         android:textColor="@color/text_primary"
         android:textSize="13sp"
         android:textStyle="bold"
