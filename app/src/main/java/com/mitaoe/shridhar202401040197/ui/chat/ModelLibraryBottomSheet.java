@@ -1,8 +1,10 @@
 package com.mitaoe.shridhar202401040197.ui.chat;
 
+import android.content.res.ColorStateList;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -336,9 +338,14 @@ public class ModelLibraryBottomSheet extends BottomSheetDialogFragment {
             if (isActive) {
                 holder.btnSelectActive.setText("✓ In Use");
                 holder.btnSelectActive.setTextColor(ContextCompat.getColor(requireContext(), R.color.accent_gemini_blue));
+                holder.btnSelectActive.setBackgroundTintList(ColorStateList.valueOf(ContextCompat.getColor(requireContext(), R.color.surface_elevated_dark)));
+                holder.btnSelectActive.setStrokeColor(ColorStateList.valueOf(ContextCompat.getColor(requireContext(), R.color.accent_gemini_blue)));
+                holder.btnSelectActive.setStrokeWidth((int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 1, getResources().getDisplayMetrics()));
             } else {
                 holder.btnSelectActive.setText("Use in Chat");
-                holder.btnSelectActive.setTextColor(ContextCompat.getColor(requireContext(), R.color.text_primary));
+                holder.btnSelectActive.setTextColor(ContextCompat.getColor(requireContext(), R.color.white));
+                holder.btnSelectActive.setBackgroundTintList(ColorStateList.valueOf(ContextCompat.getColor(requireContext(), R.color.accent_gemini_blue)));
+                holder.btnSelectActive.setStrokeWidth(0);
             }
 
             // Pin / Unpin click

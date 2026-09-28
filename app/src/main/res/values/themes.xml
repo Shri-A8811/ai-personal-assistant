@@ -10,6 +10,10 @@
         <!-- Secondary Colors -->
         <item name="colorSecondary">@color/accent_sparkle</item>
         <item name="colorOnSecondary">@color/black</item>
+        <item name="colorSecondaryContainer">@color/surface_elevated_dark</item>
+        <item name="colorOnSecondaryContainer">@color/text_primary</item>
+        <item name="colorTertiaryContainer">@color/surface_variant_dark</item>
+        <item name="colorOnTertiaryContainer">@color/text_primary</item>
 
         <!-- Background & Surface -->
         <item name="android:colorBackground">@color/bg_dark</item>
@@ -26,6 +30,10 @@
 
     <!-- Bottom Sheet Dialog Theme -->
     <style name="Theme.AIPersonalAssistant.BottomSheetDialog" parent="ThemeOverlay.Material3.BottomSheetDialog">
+        <item name="colorPrimary">@color/accent_gemini_blue</item>
+        <item name="colorOnPrimary">@color/white</item>
+        <item name="colorSecondaryContainer">@color/surface_elevated_dark</item>
+        <item name="colorOnSecondaryContainer">@color/text_primary</item>
         <item name="bottomSheetStyle">@style/CustomBottomSheetStyle</item>
     </style>
 

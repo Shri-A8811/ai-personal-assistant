@@ -50,8 +50,12 @@
             style="@style/Widget.Material3.Button.TonalButton"
             android:layout_width="wrap_content"
             android:layout_height="36dp"
+            android:backgroundTint="@color/surface_elevated_dark"
             android:text="Refresh"
-            android:textSize="11sp" />
+            android:textColor="@color/text_primary"
+            android:textSize="11sp"
+            app:strokeColor="@color/card_stroke_dark"
+            app:strokeWidth="1dp" />
     </LinearLayout>
 
     <!-- Search Box -->
@@ -285,8 +289,11 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
+            android:backgroundTint="@color/surface_elevated_dark"
             android:text="⚙️ Open Provider Settings"
-            android:textColor="@color/text_primary" />
+            android:textColor="@color/text_primary"
+            app:strokeColor="@color/card_stroke_dark"
+            app:strokeWidth="1dp" />
     </LinearLayout>
 
     <!-- Quick Add Model by Exact ID Bar -->
@@ -312,15 +319,17 @@
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnQuickPinModel"
-            style="@style/Widget.Material3.Button.TonalButton"
             android:layout_width="wrap_content"
             android:layout_height="38dp"
             android:layout_marginStart="8dp"
             android:insetTop="0dp"
             android:insetBottom="0dp"
+            android:backgroundTint="@color/accent_gemini_blue"
             android:text="+ Pin"
-            android:textColor="@color/text_primary"
-            android:textSize="11sp" />
+            android:textColor="@color/white"
+            android:textStyle="bold"
+            android:textSize="11sp"
+            app:cornerRadius="19dp" />
     </LinearLayout>
 
     <!-- Bottom Done Button -->
