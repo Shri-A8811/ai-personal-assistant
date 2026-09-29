@@ -1,6 +1,7 @@
 package com.mitaoe.shridhar202401040197;
 
 import android.Manifest;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
@@ -30,6 +31,7 @@ import com.mitaoe.shridhar202401040197.data.model.AiModel;
 import com.mitaoe.shridhar202401040197.data.model.Conversation;
 import com.mitaoe.shridhar202401040197.data.preference.PreferenceManager;
 import com.mitaoe.shridhar202401040197.service.NotificationHelper;
+import com.mitaoe.shridhar202401040197.ui.auth.AuthActivity;
 import com.mitaoe.shridhar202401040197.ui.chat.ChatFragment;
 import com.mitaoe.shridhar202401040197.ui.chat.ConversationDrawerAdapter;
 import com.mitaoe.shridhar202401040197.ui.chat.ModelLibraryBottomSheet;
@@ -72,9 +74,17 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
 
         prefManager = new PreferenceManager(this);
+        if (!prefManager.isLoggedIn()) {
+            Intent authIntent = new Intent(this, AuthActivity.class);
+            authIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            startActivity(authIntent);
+            finish();
+            return;
+        }
+
+        setContentView(R.layout.activity_main);
         db = AppDatabase.getInstance(this);
         NotificationHelper.createNotificationChannel(this);
 
@@ -201,6 +211,53 @@ public class MainActivity extends AppCompatActivity {
             drawerLayout.closeDrawer(GravityCompat.START);
             showSettingsBottomSheet();
         });
+
+        View btnDrawerModelLibrary = drawerHeader.findViewById(R.id.btnDrawerModelLibrary);
+        if (btnDrawerModelLibrary != null) {
+            btnDrawerModelLibrary.setOnClickListener(v -> {
+                drawerLayout.closeDrawer(GravityCompat.START);
+                showModelLibraryBottomSheet();
+            });
+        }
+
+        View btnDrawerSignOut = drawerHeader.findViewById(R.id.btnDrawerSignOut);
+        if (btnDrawerSignOut != null) {
+            btnDrawerSignOut.setOnClickListener(v -> {
+                new AlertDialog.Builder(this)
+                        .setTitle("Sign Out")
+                        .setMessage("Are you sure you want to sign out?")
+                        .setPositiveButton("Sign Out", (d, w) -> {
+                            prefManager.logout();
+                            Intent authIntent = new Intent(this, AuthActivity.class);
+                            authIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                            startActivity(authIntent);
+                            finish();
+                        })
+                        .setNegativeButton("Cancel", null)
+                        .show();
+            });
+        }
+
+        updateDrawerProfile();
+    }
+
+    private void updateDrawerProfile() {
+        View drawerHeader = findViewById(R.id.drawerContent);
+        if (drawerHeader == null) return;
+        TextView txtDrawerUserName = drawerHeader.findViewById(R.id.txtDrawerUserName);
+        TextView txtDrawerUserEmail = drawerHeader.findViewById(R.id.txtDrawerUserEmail);
+        if (txtDrawerUserName != null) {
+            txtDrawerUserName.setText(prefManager.getUserName());
+        }
+        if (txtDrawerUserEmail != null) {
+            txtDrawerUserEmail.setText(prefManager.getUserEmail());
+        }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        updateDrawerProfile();
     }
 
     private void handleStartNewChat() {

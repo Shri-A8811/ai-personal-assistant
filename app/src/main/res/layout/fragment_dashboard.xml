@@ -13,14 +13,75 @@
         android:orientation="vertical"
         android:padding="16dp">
 
-        <!-- AI Morning Briefing Card -->
+        <!-- Top Personalized Greeting & Status Header -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <FrameLayout
+                android:layout_width="44dp"
+                android:layout_height="44dp">
+
+                <View
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:background="@drawable/bg_model_pill"
+                    android:backgroundTint="@color/electric_cyan_glow" />
+
+                <com.google.android.material.imageview.ShapeableImageView
+                    android:layout_width="38dp"
+                    android:layout_height="38dp"
+                    android:layout_gravity="center"
+                    android:scaleType="centerCrop"
+                    android:src="@drawable/app_logo"
+                    app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Full"
+                    app:strokeColor="@color/electric_cyan"
+                    app:strokeWidth="1.5dp" />
+            </FrameLayout>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="12dp"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/txtDashboardGreeting"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:text="Welcome Back 👋"
+                    android:textColor="@color/text_primary"
+                    android:textSize="18sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/txtDashboardSubline"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:text="● AI Engine Online • Ready"
+                    android:textColor="@color/status_active"
+                    android:textSize="12sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- AI Morning Briefing Card (Hero Card) -->
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/cardBriefing"
             style="@style/ModernCard"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:cardBackgroundColor="@color/surface_elevated_dark"
-            app:strokeColor="@color/accent_gemini_blue">
+            android:layout_marginTop="16dp"
+            app:cardBackgroundColor="@color/surface_dark"
+            app:cardCornerRadius="18dp"
+            app:strokeColor="@color/electric_cyan"
+            app:strokeWidth="1dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -34,28 +95,28 @@
                     android:gravity="center_vertical"
                     android:orientation="horizontal">
 
-                    <com.google.android.material.imageview.ShapeableImageView
-                        android:layout_width="26dp"
-                        android:layout_height="26dp"
-                        android:src="@drawable/app_logo"
-                        app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Full" />
+                    <ImageView
+                        android:layout_width="22dp"
+                        android:layout_height="22dp"
+                        android:src="@drawable/ic_sparkle"
+                        app:tint="@color/electric_cyan" />
 
                     <TextView
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="8dp"
                         android:layout_weight="1"
-                        android:text="Daily Assistant Briefing"
-                        android:textColor="@color/accent_gemini_blue"
+                        android:text="Morning AI Synthesis"
+                        android:textColor="@color/electric_cyan"
                         android:textSize="15sp"
                         android:textStyle="bold" />
 
                     <ImageView
                         android:id="@+id/btnRefreshBriefing"
-                        android:layout_width="28dp"
-                        android:layout_height="28dp"
+                        android:layout_width="32dp"
+                        android:layout_height="32dp"
                         android:background="?attr/selectableItemBackgroundBorderless"
-                        android:padding="4dp"
+                        android:padding="6dp"
                         android:src="@drawable/ic_sparkle"
                         app:tint="@color/text_secondary" />
                 </LinearLayout>
@@ -66,7 +127,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="10dp"
                     android:lineSpacingExtra="3dp"
-                    android:text="Good day! Analyzing your agenda and tasks..."
+                    android:text="Analyzing your schedule, upcoming deadlines, and tasks..."
                     android:textColor="@color/text_primary"
                     android:textSize="14sp" />
 
@@ -76,8 +137,54 @@
                     android:layout_height="24dp"
                     android:layout_gravity="center_horizontal"
                     android:layout_marginTop="8dp"
-                    android:indeterminateTint="@color/accent_gemini_blue"
+                    android:indeterminateTint="@color/electric_cyan"
                     android:visibility="gone" />
+
+                <!-- Audio Voice Player Bar -->
+                <LinearLayout
+                    android:id="@+id/btnPlayAudioBriefing"
+                    android:layout_width="match_parent"
+                    android:layout_height="40dp"
+                    android:layout_marginTop="12dp"
+                    android:background="@drawable/bg_model_pill"
+                    android:backgroundTint="@color/surface_container_high"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:foreground="?attr/selectableItemBackground"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingHorizontal="14dp">
+
+                    <ImageView
+                        android:id="@+id/imgAudioBriefingIcon"
+                        android:layout_width="18dp"
+                        android:layout_height="18dp"
+                        android:src="@drawable/ic_speaker"
+                        app:tint="@color/electric_cyan" />
+
+                    <TextView
+                        android:id="@+id/txtAudioBriefingLabel"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:layout_weight="1"
+                        android:text="Listen to Audio Briefing"
+                        android:textColor="@color/text_primary"
+                        android:textSize="12sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:background="@drawable/bg_model_pill"
+                        android:backgroundTint="@color/electric_cyan_glow"
+                        android:paddingHorizontal="8dp"
+                        android:paddingVertical="2dp"
+                        android:text="Audio 🔊"
+                        android:textColor="@color/electric_cyan"
+                        android:textSize="10sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
 
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
@@ -87,12 +194,12 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="20dp"
-            android:text="@string/quick_stats"
+            android:text="Activity &amp; Productivity Stats"
             android:textColor="@color/text_muted"
             android:textSize="13sp"
             android:textStyle="bold" />
 
-        <!-- 3 Quick Metric Cards -->
+        <!-- 4 Quick Metric Cards in 2x2 / 4-card Row -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -104,9 +211,10 @@
                 style="@style/ModernCard"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginEnd="6dp"
+                android:layout_marginEnd="4dp"
                 android:layout_weight="1"
-                app:cardBackgroundColor="@color/surface_dark">
+                app:cardBackgroundColor="@color/surface_dark"
+                app:strokeColor="@color/card_stroke_dark">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -140,7 +248,8 @@
                 android:layout_height="wrap_content"
                 android:layout_marginHorizontal="3dp"
                 android:layout_weight="1"
-                app:cardBackgroundColor="@color/surface_dark">
+                app:cardBackgroundColor="@color/surface_dark"
+                app:strokeColor="@color/card_stroke_dark">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -172,9 +281,10 @@
                 style="@style/ModernCard"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="6dp"
+                android:layout_marginHorizontal="3dp"
                 android:layout_weight="1"
-                app:cardBackgroundColor="@color/surface_dark">
+                app:cardBackgroundColor="@color/surface_dark"
+                app:strokeColor="@color/card_stroke_dark">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -187,7 +297,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="0"
-                        android:textColor="@color/accent_sparkle"
+                        android:textColor="@color/electric_cyan"
                         android:textSize="22sp"
                         android:textStyle="bold" />
 
@@ -201,6 +311,41 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
+            <!-- Active Models Metric -->
+            <com.google.android.material.card.MaterialCardView
+                style="@style/ModernCard"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="4dp"
+                android:layout_weight="1"
+                app:cardBackgroundColor="@color/surface_dark"
+                app:strokeColor="@color/card_stroke_dark">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="12dp">
+
+                    <TextView
+                        android:id="@+id/txtMetricModels"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="0"
+                        android:textColor="@color/bioluminescent_indigo"
+                        android:textSize="22sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:text="Models"
+                        android:textColor="@color/text_muted"
+                        android:textSize="11sp" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
         </LinearLayout>
 
         <!-- Tasks Due Today Title -->
@@ -208,7 +353,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="22dp"
-            android:text="@string/today_tasks"
+            android:text="Today's Agenda &amp; Deadlines"
             android:textColor="@color/text_primary"
             android:textSize="16sp"
             android:textStyle="bold" />

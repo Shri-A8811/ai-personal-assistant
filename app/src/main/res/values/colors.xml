@@ -1,14 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Modern ChatGPT / Gemini Theme Colors -->
+    <!-- Obsidian Cybernetic Design System (Stitch Theme) -->
     <!-- Base Backgrounds -->
-    <color name="bg_dark">#121212</color>
-    <color name="surface_dark">#1E1E1E</color>
-    <color name="surface_variant_dark">#262626</color>
-    <color name="surface_elevated_dark">#2E2E2E</color>
-    <color name="card_stroke_dark">#383838</color>
+    <color name="bg_dark">#060E20</color>
+    <color name="surface_dark">#0B1326</color>
+    <color name="surface_variant_dark">#131B2E</color>
+    <color name="surface_elevated_dark">#171F33</color>
+    <color name="surface_container_high">#222A3D</color>
+    <color name="card_stroke_dark">#1E293B</color>
+    <color name="card_stroke_active">#334155</color>
 
-    <!-- Light Surface Fallbacks (if light theme selected) -->
+    <!-- Light Surface Fallbacks -->
     <color name="bg_light">#F7F7F8</color>
     <color name="surface_light">#FFFFFF</color>
     <color name="surface_variant_light">#EFEFF2</color>
@@ -16,19 +18,24 @@
     <color name="card_stroke_light">#E0E0E0</color>
 
     <!-- Typography -->
-    <color name="text_primary">#F1F1F1</color>
-    <color name="text_secondary">#A1A1AA</color>
-    <color name="text_muted">#71717A</color>
+    <color name="text_primary">#F8FAFC</color>
+    <color name="text_secondary">#94A3B8</color>
+    <color name="text_muted">#64748B</color>
 
-    <!-- Gemini & ChatGPT Brand Accents -->
-    <color name="accent_gemini_blue">#4E80EE</color>
-    <color name="accent_gemini_purple">#9B66FF</color>
-    <color name="accent_chatgpt_green">#10A37F</color>
-    <color name="accent_sparkle">#60A5FA</color>
+    <!-- Cybernetic & Neon Accents -->
+    <color name="electric_cyan">#38BDF8</color>
+    <color name="electric_cyan_dark">#0284C7</color>
+    <color name="electric_cyan_glow">#2638BDF8</color>
+    <color name="bioluminescent_indigo">#6366F1</color>
+    <color name="cyber_violet">#818CF8</color>
+    <color name="accent_gemini_blue">#38BDF8</color>
+    <color name="accent_gemini_purple">#6366F1</color>
+    <color name="accent_chatgpt_green">#10B981</color>
+    <color name="accent_sparkle">#38BDF8</color>
     
     <!-- User and Assistant Chat Bubbles -->
-    <color name="user_bubble">#2F2F2F</color>
-    <color name="assistant_bubble">#1E1E1E</color>
+    <color name="user_bubble">#1E293B</color>
+    <color name="assistant_bubble">#141E33</color>
     
     <!-- Priority Accents -->
     <color name="priority_high">#EF4444</color>
@@ -36,15 +43,15 @@
     <color name="priority_low">#10B981</color>
     
     <!-- Chips & Badges -->
-    <color name="chip_bg">#2A2A2A</color>
-    <color name="chip_selected">#3B82F6</color>
-    <color name="chip_free_badge">#059669</color>
+    <color name="chip_bg">#131B2E</color>
+    <color name="chip_selected">#38BDF8</color>
+    <color name="chip_free_badge">#10B981</color>
     
     <!-- Utility Colors -->
     <color name="white">#FFFFFF</color>
     <color name="black">#000000</color>
     <color name="transparent">#00000000</color>
     <color name="status_active">#10B981</color>
-    <color name="status_inactive">#52525B</color>
-    <color name="divider">#27272A</color>
+    <color name="status_inactive">#64748B</color>
+    <color name="divider">#1E293B</color>
 </resources>

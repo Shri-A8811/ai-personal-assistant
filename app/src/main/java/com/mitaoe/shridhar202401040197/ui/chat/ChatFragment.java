@@ -95,6 +95,11 @@ public class ChatFragment extends Fragment {
         imgAttachedPreview = view.findViewById(R.id.imgAttachedPreview);
         previewContainer = view.findViewById(R.id.previewContainer);
         layoutWelcome = view.findViewById(R.id.layoutWelcome);
+        TextView txtWelcomeTitle = view.findViewById(R.id.txtWelcomeTitle);
+        if (txtWelcomeTitle != null) {
+            String userName = prefManager.getUserName();
+            txtWelcomeTitle.setText("Hello, " + userName + "!\nHow can I assist you today?");
+        }
 
         chipSuggest1 = view.findViewById(R.id.chipSuggest1);
         chipSuggest2 = view.findViewById(R.id.chipSuggest2);
@@ -157,6 +162,13 @@ public class ChatFragment extends Fragment {
         }
         layoutWelcome.setVisibility(View.VISIBLE);
         recyclerChat.setVisibility(View.GONE);
+        if (getView() != null) {
+            TextView txtWelcomeTitle = getView().findViewById(R.id.txtWelcomeTitle);
+            if (txtWelcomeTitle != null) {
+                String userName = prefManager.getUserName();
+                txtWelcomeTitle.setText("Hello, " + userName + "!\nHow can I assist you today?");
+            }
+        }
         if (getActivity() instanceof MainActivity) {
             ((MainActivity) getActivity()).updateSelectedConversationInDrawer(0);
         }

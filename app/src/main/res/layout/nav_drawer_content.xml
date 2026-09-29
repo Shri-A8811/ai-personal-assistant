@@ -7,28 +7,21 @@
     android:orientation="vertical"
     android:padding="16dp">
 
-    <!-- Drawer Header -->
+    <!-- Drawer Top Bar & Close Button -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="24dp"
+        android:layout_marginTop="16dp"
         android:gravity="center_vertical"
         android:orientation="horizontal">
-
-        <com.google.android.material.imageview.ShapeableImageView
-            android:layout_width="32dp"
-            android:layout_height="32dp"
-            android:src="@drawable/app_logo"
-            app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Full" />
 
         <TextView
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginStart="10dp"
             android:layout_weight="1"
-            android:text="Chat History"
-            android:textColor="@color/text_primary"
-            android:textSize="18sp"
+            android:text="AI Workspace"
+            android:textColor="@color/text_muted"
+            android:textSize="12sp"
             android:textStyle="bold" />
 
         <ImageView
@@ -38,23 +31,112 @@
             android:background="?attr/selectableItemBackgroundBorderless"
             android:padding="6dp"
             android:src="@drawable/ic_delete"
-            app:tint="@color/text_muted" />
+            app:tint="@color/text_secondary" />
     </LinearLayout>
 
-    <!-- "+ New Chat" Button -->
+    <!-- User Profile Header (Dynamic Name & Email from Sign Up) -->
+    <LinearLayout
+        android:id="@+id/layoutDrawerProfile"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:background="@drawable/bg_model_pill"
+        android:backgroundTint="@color/surface_elevated_dark"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:padding="12dp">
+
+        <FrameLayout
+            android:layout_width="44dp"
+            android:layout_height="44dp">
+
+            <View
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:background="@drawable/bg_model_pill"
+                android:backgroundTint="@color/electric_cyan_glow" />
+
+            <com.google.android.material.imageview.ShapeableImageView
+                android:id="@+id/imgDrawerAvatar"
+                android:layout_width="38dp"
+                android:layout_height="38dp"
+                android:layout_gravity="center"
+                android:scaleType="centerCrop"
+                android:src="@drawable/app_logo"
+                app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Full"
+                app:strokeColor="@color/electric_cyan"
+                app:strokeWidth="1.5dp" />
+        </FrameLayout>
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/txtDrawerUserName"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:text="User"
+                android:textColor="@color/text_primary"
+                android:textSize="15sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/txtDrawerUserEmail"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="1dp"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:text="user@example.com"
+                android:textColor="@color/text_muted"
+                android:textSize="11sp" />
+
+            <!-- Online Status Pill -->
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <View
+                    android:layout_width="6dp"
+                    android:layout_height="6dp"
+                    android:background="@drawable/bg_model_pill"
+                    android:backgroundTint="@color/status_active" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="5dp"
+                    android:text="Online • Ready"
+                    android:textColor="@color/status_active"
+                    android:textSize="10sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- "+ New Chat" Action Button -->
     <com.google.android.material.button.MaterialButton
         android:id="@+id/btnDrawerNewChat"
         style="@style/Widget.Material3.Button.TonalButton"
         android:layout_width="match_parent"
         android:layout_height="48dp"
         android:layout_marginTop="16dp"
-        android:backgroundTint="@color/surface_elevated_dark"
+        android:backgroundTint="@color/surface_container_high"
         android:text="➕   New Chat"
-        android:textColor="@color/text_primary"
+        android:textColor="@color/electric_cyan"
         android:textSize="14sp"
         android:textStyle="bold"
         app:cornerRadius="24dp"
-        app:strokeColor="@color/card_stroke_dark"
+        app:strokeColor="@color/electric_cyan"
         app:strokeWidth="1dp" />
 
     <!-- Section Title -->
@@ -92,10 +174,49 @@
     <View
         android:layout_width="match_parent"
         android:layout_height="1dp"
-        android:layout_marginVertical="10dp"
+        android:layout_marginVertical="8dp"
         android:background="@color/divider" />
 
-    <!-- Footer actions -->
+    <!-- Footer Action: Model Library & Hub -->
+    <LinearLayout
+        android:id="@+id/btnDrawerModelLibrary"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="?attr/selectableItemBackground"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingVertical="8dp">
+
+        <ImageView
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:src="@drawable/ic_bolt"
+            app:tint="@color/electric_cyan" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="10dp"
+            android:layout_weight="1"
+            android:text="Model Library &amp; Hub"
+            android:textColor="@color/text_primary"
+            android:textSize="13sp" />
+
+        <TextView
+            android:id="@+id/txtDrawerPinnedBadge"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_model_pill"
+            android:backgroundTint="@color/electric_cyan_glow"
+            android:paddingHorizontal="8dp"
+            android:paddingVertical="2dp"
+            android:text="Models"
+            android:textColor="@color/electric_cyan"
+            android:textSize="11sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+    <!-- Footer Action: Settings & AI Providers -->
     <LinearLayout
         android:id="@+id/btnDrawerSettings"
         android:layout_width="match_parent"
@@ -117,6 +238,31 @@
             android:layout_marginStart="10dp"
             android:text="Settings &amp; AI Providers"
             android:textColor="@color/text_secondary"
+            android:textSize="13sp" />
+    </LinearLayout>
+
+    <!-- Footer Action: Sign Out -->
+    <LinearLayout
+        android:id="@+id/btnDrawerSignOut"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="?attr/selectableItemBackground"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingVertical="8dp">
+
+        <ImageView
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:src="@drawable/ic_delete"
+            app:tint="@color/priority_high" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="10dp"
+            android:text="Sign Out"
+            android:textColor="@color/priority_high"
             android:textSize="13sp" />
     </LinearLayout>
 

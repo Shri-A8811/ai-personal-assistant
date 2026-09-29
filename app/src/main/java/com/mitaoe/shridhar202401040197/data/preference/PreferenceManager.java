@@ -31,6 +31,10 @@ public class PreferenceManager {
     private static final String KEY_PINNED_MODELS = "pinned_models_json";
     private static final String KEY_FETCHED_MODELS_CACHE = "fetched_models_cache_json";
     private static final String KEY_VOICE_AUTO_SPEAK = "voice_auto_speak";
+    private static final String KEY_USER_NAME = "user_full_name";
+    private static final String KEY_USER_EMAIL = "user_email_address";
+    private static final String KEY_USER_PASSWORD = "user_password_hash";
+    private static final String KEY_IS_LOGGED_IN = "user_is_logged_in";
     private static final String KEY_PREFS_VERSION = "prefs_schema_version";
     private static final int CURRENT_VERSION = 5;
 
@@ -269,5 +273,32 @@ public class PreferenceManager {
             }
         }
         saveCachedFetchedModels(cached);
+    }
+
+    // User Authentication & Profile
+    public boolean isLoggedIn() {
+        return prefs.getBoolean(KEY_IS_LOGGED_IN, false);
+    }
+
+    public void saveUser(String name, String email, String password) {
+        prefs.edit()
+            .putString(KEY_USER_NAME, name != null ? name.trim() : "")
+            .putString(KEY_USER_EMAIL, email != null ? email.trim() : "")
+            .putString(KEY_USER_PASSWORD, password != null ? password : "")
+            .putBoolean(KEY_IS_LOGGED_IN, true)
+            .apply();
+    }
+
+    public String getUserName() {
+        String name = prefs.getString(KEY_USER_NAME, "");
+        return name.isEmpty() ? "User" : name;
+    }
+
+    public String getUserEmail() {
+        return prefs.getString(KEY_USER_EMAIL, "");
+    }
+
+    public void logout() {
+        prefs.edit().putBoolean(KEY_IS_LOGGED_IN, false).apply();
     }
 }

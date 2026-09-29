@@ -24,22 +24,30 @@ import com.mitaoe.shridhar202401040197.ui.tasks.TaskAdapter;
 import com.mitaoe.shridhar202401040197.ui.tasks.TaskDialog;
 import com.mitaoe.shridhar202401040197.util.DateTimeUtil;
 
+import com.mitaoe.shridhar202401040197.data.preference.PreferenceManager;
+import com.mitaoe.shridhar202401040197.util.VoiceAssistantHelper;
+
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.List;
 import java.util.concurrent.Executors;
 
 public class DashboardFragment extends Fragment {
 
+    private TextView txtDashboardGreeting;
     private TextView txtBriefingContent;
     private ProgressBar progressBriefing;
     private ImageView btnRefreshBriefing;
-    private TextView txtMetricCompleted, txtMetricPending, txtMetricNotes;
+    private View btnPlayAudioBriefing;
+    private TextView txtMetricCompleted, txtMetricPending, txtMetricNotes, txtMetricModels;
     private TextView txtNoTasksToday;
     private RecyclerView recyclerDashboardTasks;
     private TaskAdapter taskAdapter;
 
     private AppDatabase db;
     private AiService aiService;
+    private PreferenceManager prefManager;
+    private VoiceAssistantHelper voiceHelper;
 
     @Nullable
     @Override
@@ -48,15 +56,32 @@ public class DashboardFragment extends Fragment {
 
         db = AppDatabase.getInstance(requireContext());
         aiService = new AiService(requireContext());
+        prefManager = new PreferenceManager(requireContext());
+        voiceHelper = new VoiceAssistantHelper(requireContext());
 
+        txtDashboardGreeting = view.findViewById(R.id.txtDashboardGreeting);
         txtBriefingContent = view.findViewById(R.id.txtBriefingContent);
         progressBriefing = view.findViewById(R.id.progressBriefing);
         btnRefreshBriefing = view.findViewById(R.id.btnRefreshBriefing);
+        btnPlayAudioBriefing = view.findViewById(R.id.btnPlayAudioBriefing);
         txtMetricCompleted = view.findViewById(R.id.txtMetricCompleted);
         txtMetricPending = view.findViewById(R.id.txtMetricPending);
         txtMetricNotes = view.findViewById(R.id.txtMetricNotes);
+        txtMetricModels = view.findViewById(R.id.txtMetricModels);
         txtNoTasksToday = view.findViewById(R.id.txtNoTasksToday);
         recyclerDashboardTasks = view.findViewById(R.id.recyclerDashboardTasks);
+
+        updateGreeting();
+        updateModelsMetric();
+
+        if (btnPlayAudioBriefing != null) {
+            btnPlayAudioBriefing.setOnClickListener(v -> {
+                String text = txtBriefingContent.getText().toString();
+                if (voiceHelper != null && !text.isEmpty()) {
+                    voiceHelper.speak(text);
+                }
+            });
+        }
 
         recyclerDashboardTasks.setLayoutManager(new LinearLayoutManager(requireContext()));
         taskAdapter = new TaskAdapter(new TaskAdapter.TaskActionListener() {
@@ -155,5 +180,43 @@ public class DashboardFragment extends Fragment {
                 }
             });
         });
+    }
+
+    private void updateGreeting() {
+        if (txtDashboardGreeting == null) return;
+        Calendar c = Calendar.getInstance();
+        int hour = c.get(Calendar.HOUR_OF_DAY);
+        String timeGreeting = "Good day";
+        if (hour >= 4 && hour < 12) {
+            timeGreeting = "Good morning";
+        } else if (hour >= 12 && hour < 17) {
+            timeGreeting = "Good afternoon";
+        } else if (hour >= 17 && hour < 22) {
+            timeGreeting = "Good evening";
+        }
+        String name = prefManager.getUserName();
+        txtDashboardGreeting.setText(timeGreeting + ", " + name + " 👋");
+    }
+
+    private void updateModelsMetric() {
+        if (txtMetricModels == null) return;
+        int pinnedCount = prefManager.getPinnedModels().size();
+        txtMetricModels.setText(String.valueOf(pinnedCount));
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        updateGreeting();
+        updateModelsMetric();
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        if (voiceHelper != null) {
+            voiceHelper.destroy();
+            voiceHelper = null;
+        }
     }
 }

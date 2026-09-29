@@ -22,9 +22,9 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.AIPersonalAssistant">
 
-        <!-- Main Launcher Activity -->
+        <!-- Auth Activity (Launcher) -->
         <activity
-            android:name="com.mitaoe.shridhar202401040197.MainActivity"
+            android:name="com.mitaoe.shridhar202401040197.ui.auth.AuthActivity"
             android:exported="true"
             android:windowSoftInputMode="adjustResize">
             <intent-filter>
@@ -32,6 +32,12 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- Main Workspace Activity -->
+        <activity
+            android:name="com.mitaoe.shridhar202401040197.MainActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
 
         <!-- Note Editor Activity -->
         <activity
