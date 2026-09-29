@@ -2,15 +2,23 @@
 
 > **Package Name**: `com.mitaoe.shridhar202401040197`  
 > **Platform**: Native Android (Android Studio)  
-> **Language**: 100% Modern Java  
-> **Design Theme**: Sleek ChatGPT & Gemini Dark Monochrome Theme (`#121212`, `#1E1E1E`, Electric Blue/Cyan accents)  
+> **Language**: 100% Modern Java (JDK 17)  
+> **Design Theme**: Obsidian Cybernetic Dark Theme (`#060E20`, `#0B1326`, Electric Cyan `#38BDF8`, Indigo `#6366F1`)  
 > **Status**: Compiled & Verified (`app-debug.apk` ready!)
 
 ---
 
 ## 🌟 Key Features & Capabilities
 
-### 1. 💬 AI Chat & Natural Language Action Execution
+### 1. 🔐 User Account & Personalization (Sign Up Flow)
+- **Fast Onboarding**: Sign up with just **Name**, **Email**, and **Password**.
+- **Dynamic Profile Integration**:
+  - Personalized greetings across the app based on the time of day (`"Good morning / afternoon / evening, <Name> 👋"`).
+  - Navigation Drawer profile card displaying your name, email, and live status (`● Online • Ready`).
+  - Seamless Sign Out / Account Switcher directly from the drawer.
+- **Local & Private Storage**: Credentials and preferences stored securely on-device via `PreferenceManager`.
+
+### 2. 💬 AI Chat & Natural Language Action Execution
 - **Multi-Provider AI Intelligence**: Switch between **OpenRouter**, **Google Gemini**, **Groq**, **NVIDIA NIM**, and **OpenAI**.
 - **Free Model Presets Included**:
   - `meta-llama/llama-3.3-70b-instruct:free` (Llama 3.3 70B - Free)
@@ -32,7 +40,7 @@
 
 ---
 
-### 2. ⚡ Top Bar Model Quick-Switcher & Settings Hub
+### 3. ⚡ Top Bar Model Quick-Switcher & Settings Hub
 - **Sleek Model Pill**: Tap the top chip (e.g. `⚡ Llama 3.3 70B (Free)`) at any time to open the **Model Selector Bottom Sheet**.
 - **Model Pinner & Checkboxes**: In **Settings ⚙️**, choose exactly which models are pinned to your chat switcher.
 - **Live "Fetch Models" Button**: Connect your API key and tap *Fetch Available Models* to load real-time models directly from OpenRouter, Groq, or OpenAI!
@@ -40,7 +48,7 @@
 
 ---
 
-### 3. ✅ Tasks & Reminders with Background Alarms
+### 4. ✅ Tasks & Reminders with Background Alarms
 - **Heads-Up Notifications**: Triggers exact alarms via Android `AlarmManager` with sound and vibration.
 - **Action Buttons in Notification**:
   - 🔘 **Mark as Done**: Instantly marks the task complete directly from the notification tray.
@@ -50,7 +58,7 @@
 
 ---
 
-### 4. 📝 Smart Notes with AI Tools
+### 5. 📝 Smart Notes with AI Tools
 - **Rich Editor**: Title, content, timestamps.
 - **One-Tap AI Actions**:
   - ✨ **Summarize**: Condenses the note into 2-3 key takeaways.
@@ -60,9 +68,10 @@
 
 ---
 
-### 5. 📊 Daily AI Briefing Dashboard
+### 6. 📊 Daily AI Briefing Dashboard
 - **Morning Summary Card**: Generates an intelligent morning overview based on your pending tasks and schedule.
-- **Quick Counters**: Tasks Completed, Pending Reminders, Active Notes.
+- **Voice Briefing Playback**: Listen to your morning summary out loud with 1 tap.
+- **Quick Counters**: Tasks Completed, Pending Reminders, Active Notes, Models Configured.
 - **Today's Priorities**: Quick view of urgent items due today.
 
 ---
