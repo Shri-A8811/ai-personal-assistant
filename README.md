@@ -1,6 +1,7 @@
 # 🤖 AI Personal Assistant Android App
 
-> **Package Name**: `com.mitaoe.shridhar202401040197`  
+> **Application ID**: `com.mitaoe.shridhar202401040197.aiassistant`  
+> **Namespace**: `com.mitaoe.shridhar202401040197`  
 > **Platform**: Native Android (Android Studio)  
 > **Language**: 100% Modern Java (JDK 17)  
 > **Design Theme**: Obsidian Cybernetic Dark Theme (`#060E20`, `#0B1326`, Electric Cyan `#38BDF8`, Indigo `#6366F1`)  

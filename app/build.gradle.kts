@@ -9,7 +9,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.mitaoe.shridhar202401040197"
+        applicationId = "com.mitaoe.shridhar202401040197.aiassistant"
         minSdk = 26
         targetSdk = 34
         versionCode = 1
