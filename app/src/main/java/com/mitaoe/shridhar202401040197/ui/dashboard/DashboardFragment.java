@@ -10,6 +10,7 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -30,7 +31,8 @@ import com.mitaoe.shridhar202401040197.util.VoiceAssistantHelper;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
-import java.util.concurrent.Executors;
+
+import com.mitaoe.shridhar202401040197.util.AppExecutors;
 
 public class DashboardFragment extends Fragment {
 
@@ -87,7 +89,7 @@ public class DashboardFragment extends Fragment {
         taskAdapter = new TaskAdapter(new TaskAdapter.TaskActionListener() {
             @Override
             public void onToggleComplete(TaskItem task, boolean isCompleted) {
-                Executors.newSingleThreadExecutor().execute(() -> {
+                AppExecutors.getInstance().diskIO().execute(() -> {
                     task.setCompleted(isCompleted);
                     db.taskDao().update(task);
                     if (isCompleted) {
@@ -98,10 +100,17 @@ public class DashboardFragment extends Fragment {
 
             @Override
             public void onDeleteTask(TaskItem task) {
-                Executors.newSingleThreadExecutor().execute(() -> {
-                    db.taskDao().delete(task);
-                    NotificationHelper.cancelAlarm(requireContext(), task.getId());
-                });
+                new AlertDialog.Builder(requireContext())
+                        .setTitle("Delete Task")
+                        .setMessage("Delete \"" + (task.getTitle() != null ? task.getTitle() : "task") + "\"?")
+                        .setPositiveButton("Delete", (dialog, which) -> {
+                            AppExecutors.getInstance().diskIO().execute(() -> {
+                                db.taskDao().delete(task);
+                                NotificationHelper.cancelAlarm(requireContext(), task.getId());
+                            });
+                        })
+                        .setNegativeButton("Cancel", null)
+                        .show();
             }
 
             @Override
@@ -143,7 +152,7 @@ public class DashboardFragment extends Fragment {
         progressBriefing.setVisibility(View.VISIBLE);
         txtBriefingContent.setText("Preparing your personalized morning briefing...");
 
-        Executors.newSingleThreadExecutor().execute(() -> {
+        AppExecutors.getInstance().diskIO().execute(() -> {
             List<TaskItem> pending = db.taskDao().getPendingTasksSync();
             List<NoteItem> notes = db.noteDao().getAllNotesSync();
 

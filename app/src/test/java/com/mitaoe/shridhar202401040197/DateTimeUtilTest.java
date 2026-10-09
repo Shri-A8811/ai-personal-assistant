@@ -1,6 +1,5 @@
 package com.mitaoe.shridhar202401040197;
 
-import com.mitaoe.shridhar202401040197.ai.NaturalLanguageActionParser;
 import com.mitaoe.shridhar202401040197.util.DateTimeUtil;
 
 import org.junit.Test;
@@ -59,5 +58,46 @@ public class DateTimeUtilTest {
 
         assertEquals(18, cal.get(Calendar.HOUR_OF_DAY));
         assertEquals(30, cal.get(Calendar.MINUTE));
+    }
+
+    @Test
+    public void testParseRelativeOffsetInHours() {
+        long before = System.currentTimeMillis();
+        long result = DateTimeUtil.parseNaturalDate("Remind me to take medication in 2 hours");
+        long after = System.currentTimeMillis();
+
+        assertTrue(result >= before + 2 * 3600 * 1000 - 60000);
+        assertTrue(result <= after + 2 * 3600 * 1000 + 60000);
+    }
+
+    @Test
+    public void testParseRelativeOffsetInMinutes() {
+        long before = System.currentTimeMillis();
+        long result = DateTimeUtil.parseNaturalDate("Check the oven in 30 mins");
+        long after = System.currentTimeMillis();
+
+        assertTrue(result >= before + 30 * 60 * 1000 - 60000);
+        assertTrue(result <= after + 30 * 60 * 1000 + 60000);
+    }
+
+    @Test
+    public void testParseTonightDefaultHour() {
+        long result = DateTimeUtil.parseNaturalDate("Finish assignment tonight");
+        assertTrue(result > 0);
+
+        Calendar cal = Calendar.getInstance();
+        cal.setTimeInMillis(result);
+        assertEquals(20, cal.get(Calendar.HOUR_OF_DAY)); // 8 PM
+    }
+
+    @Test
+    public void testParseWeekday() {
+        long result = DateTimeUtil.parseNaturalDate("Submit project report next Monday at 10am");
+        assertTrue(result > 0);
+
+        Calendar cal = Calendar.getInstance();
+        cal.setTimeInMillis(result);
+        assertEquals(Calendar.MONDAY, cal.get(Calendar.DAY_OF_WEEK));
+        assertEquals(10, cal.get(Calendar.HOUR_OF_DAY));
     }
 }

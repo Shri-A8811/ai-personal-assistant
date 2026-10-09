@@ -135,6 +135,48 @@
         android:text="Set Alarm Reminder ⏰"
         android:textColor="@color/text_primary" />
 
+    <!-- Recurrence Frequency -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:text="Repeat Frequency 🔁"
+        android:textColor="@color/text_muted"
+        android:textSize="12sp" />
+
+    <RadioGroup
+        android:id="@+id/radioGroupRecurrence"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:checkedButton="@+id/radioRepeatNone"
+        android:orientation="horizontal">
+
+        <RadioButton
+            android:id="@+id/radioRepeatNone"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Once"
+            android:textColor="@color/text_primary" />
+
+        <RadioButton
+            android:id="@+id/radioRepeatDaily"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Daily"
+            android:textColor="@color/text_primary" />
+
+        <RadioButton
+            android:id="@+id/radioRepeatWeekly"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Weekly"
+            android:textColor="@color/text_primary" />
+    </RadioGroup>
+
     <!-- Action Buttons -->
     <LinearLayout
         android:layout_width="match_parent"

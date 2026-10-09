@@ -11,6 +11,8 @@ import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.mitaoe.shridhar202401040197.util.SecurityUtil;
+
 public class PreferenceManager {
 
     private static final String PREF_NAME = "ai_assistant_prefs";
@@ -34,8 +36,13 @@ public class PreferenceManager {
     private static final String KEY_USER_NAME = "user_full_name";
     private static final String KEY_USER_EMAIL = "user_email_address";
     private static final String KEY_USER_PASSWORD = "user_password_hash";
+    private static final String KEY_USER_SALT = "user_password_salt";
+    private static final String KEY_IS_GUEST = "user_is_guest";
     private static final String KEY_IS_LOGGED_IN = "user_is_logged_in";
     private static final String KEY_PREFS_VERSION = "prefs_schema_version";
+    private static final String KEY_AI_PERSONA = "ai_persona";
+    private static final String KEY_AI_CUSTOM_SYSTEM_PROMPT = "ai_custom_system_prompt";
+    private static final String KEY_CHAT_WITH_NOTES = "ai_chat_with_notes";
     private static final int CURRENT_VERSION = 5;
 
     private final SharedPreferences prefs;
@@ -280,11 +287,69 @@ public class PreferenceManager {
         return prefs.getBoolean(KEY_IS_LOGGED_IN, false);
     }
 
+    public boolean isGuest() {
+        return prefs.getBoolean(KEY_IS_GUEST, false);
+    }
+
+    public boolean hasAccount() {
+        String email = prefs.getString(KEY_USER_EMAIL, "");
+        return !email.isEmpty() && !prefs.getBoolean(KEY_IS_GUEST, false);
+    }
+
     public void saveUser(String name, String email, String password) {
+        String salt = SecurityUtil.generateSalt();
+        String hashedPassword = SecurityUtil.hashPassword(password, salt);
         prefs.edit()
             .putString(KEY_USER_NAME, name != null ? name.trim() : "")
             .putString(KEY_USER_EMAIL, email != null ? email.trim() : "")
-            .putString(KEY_USER_PASSWORD, password != null ? password : "")
+            .putString(KEY_USER_PASSWORD, hashedPassword)
+            .putString(KEY_USER_SALT, salt)
+            .putBoolean(KEY_IS_GUEST, false)
+            .putBoolean(KEY_IS_LOGGED_IN, true)
+            .apply();
+    }
+
+    public void setGuestSession() {
+        prefs.edit()
+            .putString(KEY_USER_NAME, "Guest User")
+            .putString(KEY_USER_EMAIL, "guest@workspace.local")
+            .putBoolean(KEY_IS_GUEST, true)
+            .putBoolean(KEY_IS_LOGGED_IN, true)
+            .apply();
+    }
+
+    public boolean verifyCredentials(String email, String password) {
+        String savedEmail = prefs.getString(KEY_USER_EMAIL, "");
+        String savedHash = prefs.getString(KEY_USER_PASSWORD, "");
+        String savedSalt = prefs.getString(KEY_USER_SALT, "");
+
+        if (savedEmail.isEmpty() || email == null || password == null) {
+            return false;
+        }
+
+        if (!savedEmail.equalsIgnoreCase(email.trim())) {
+            return false;
+        }
+
+        if (!savedSalt.isEmpty()) {
+            return SecurityUtil.verifyPassword(password, savedHash, savedSalt);
+        } else {
+            // Legacy migration: if stored hash was raw plaintext password
+            if (savedHash.equals(password)) {
+                String salt = SecurityUtil.generateSalt();
+                prefs.edit()
+                    .putString(KEY_USER_PASSWORD, SecurityUtil.hashPassword(password, salt))
+                    .putString(KEY_USER_SALT, salt)
+                    .apply();
+                return true;
+            }
+            return false;
+        }
+    }
+
+    public void login() {
+        prefs.edit()
+            .putBoolean(KEY_IS_GUEST, false)
             .putBoolean(KEY_IS_LOGGED_IN, true)
             .apply();
     }
@@ -300,5 +365,51 @@ public class PreferenceManager {
 
     public void logout() {
         prefs.edit().putBoolean(KEY_IS_LOGGED_IN, false).apply();
+    }
+
+    // AI Persona & Prompt Overrides
+    public String getAiPersona() {
+        return prefs.getString(KEY_AI_PERSONA, "General Assistant");
+    }
+
+    public void setAiPersona(String persona) {
+        prefs.edit().putString(KEY_AI_PERSONA, persona).apply();
+    }
+
+    public String getCustomSystemPrompt() {
+        return prefs.getString(KEY_AI_CUSTOM_SYSTEM_PROMPT, "");
+    }
+
+    public void setCustomSystemPrompt(String prompt) {
+        prefs.edit().putString(KEY_AI_CUSTOM_SYSTEM_PROMPT, prompt != null ? prompt.trim() : "").apply();
+    }
+
+    public boolean isChatWithNotesEnabled() {
+        return prefs.getBoolean(KEY_CHAT_WITH_NOTES, false);
+    }
+
+    public void setChatWithNotesEnabled(boolean enabled) {
+        prefs.edit().putBoolean(KEY_CHAT_WITH_NOTES, enabled).apply();
+    }
+
+    public String getEffectiveSystemPrompt() {
+        String custom = getCustomSystemPrompt();
+        if (custom != null && !custom.trim().isEmpty()) {
+            return custom.trim();
+        }
+        String persona = getAiPersona();
+        switch (persona) {
+            case "Coder / Developer":
+                return "You are an expert software engineer and programming assistant. Provide clean, well-explained code, best practices, and concise technical explanations.";
+            case "Student Tutor":
+                return "You are an encouraging and pedagogical tutor. Explain complex concepts step-by-step with clear real-world examples, analogies, and practice checks.";
+            case "Productivity Planner":
+                return "You are a pragmatic executive assistant and productivity planner. Prioritize actionable checklists, time-blocking, and clear summaries.";
+            case "Concise / Direct":
+                return "You are an ultra-concise assistant. Answer questions directly in as few words as possible without fluff or unnecessary pleasantries.";
+            case "General Assistant":
+            default:
+                return "You are an intelligent, concise, and helpful personal AI assistant. You help manage tasks, notes, reminders, and answer user queries cleanly.";
+        }
     }
 }

@@ -9,6 +9,7 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.LiveData;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -20,9 +21,9 @@ import com.mitaoe.shridhar202401040197.R;
 import com.mitaoe.shridhar202401040197.data.database.AppDatabase;
 import com.mitaoe.shridhar202401040197.data.model.TaskItem;
 import com.mitaoe.shridhar202401040197.service.NotificationHelper;
+import com.mitaoe.shridhar202401040197.util.AppExecutors;
 
 import java.util.List;
-import java.util.concurrent.Executors;
 
 public class TasksFragment extends Fragment {
 
@@ -48,7 +49,7 @@ public class TasksFragment extends Fragment {
         adapter = new TaskAdapter(new TaskAdapter.TaskActionListener() {
             @Override
             public void onToggleComplete(TaskItem task, boolean isCompleted) {
-                Executors.newSingleThreadExecutor().execute(() -> {
+                AppExecutors.getInstance().diskIO().execute(() -> {
                     task.setCompleted(isCompleted);
                     db.taskDao().update(task);
                     if (isCompleted) {
@@ -59,11 +60,18 @@ public class TasksFragment extends Fragment {
 
             @Override
             public void onDeleteTask(TaskItem task) {
-                Executors.newSingleThreadExecutor().execute(() -> {
-                    db.taskDao().delete(task);
-                    NotificationHelper.cancelAlarm(requireContext(), task.getId());
-                });
-                Toast.makeText(requireContext(), "Task deleted", Toast.LENGTH_SHORT).show();
+                new AlertDialog.Builder(requireContext())
+                        .setTitle("Delete Task")
+                        .setMessage("Delete \"" + (task.getTitle() != null ? task.getTitle() : "task") + "\"?")
+                        .setPositiveButton("Delete", (dialog, which) -> {
+                            AppExecutors.getInstance().diskIO().execute(() -> {
+                                db.taskDao().delete(task);
+                                NotificationHelper.cancelAlarm(requireContext(), task.getId());
+                            });
+                            Toast.makeText(requireContext(), "Task deleted", Toast.LENGTH_SHORT).show();
+                        })
+                        .setNegativeButton("Cancel", null)
+                        .show();
             }
 
             @Override

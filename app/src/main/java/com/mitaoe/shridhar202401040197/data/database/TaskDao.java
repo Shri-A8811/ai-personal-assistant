@@ -27,6 +27,9 @@ public interface TaskDao {
     @Query("SELECT * FROM tasks ORDER BY dueDateMillis ASC, id DESC")
     LiveData<List<TaskItem>> getAllTasks();
 
+    @Query("SELECT * FROM tasks ORDER BY dueDateMillis ASC, id DESC")
+    List<TaskItem> getAllTasksSync();
+
     @Query("SELECT * FROM tasks WHERE isCompleted = 0 ORDER BY dueDateMillis ASC")
     LiveData<List<TaskItem>> getPendingTasks();
 

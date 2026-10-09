@@ -18,6 +18,7 @@ public class TaskItem implements Serializable {
     private boolean isCompleted;
     private String category;
     private boolean hasReminder;
+    private String recurrence = "NONE"; // NONE, DAILY, WEEKLY
 
     public TaskItem(String title, String description, long dueDateMillis, String priority, String category, boolean hasReminder) {
         this.title = title;
@@ -27,6 +28,7 @@ public class TaskItem implements Serializable {
         this.isCompleted = false;
         this.category = category != null ? category : "General";
         this.hasReminder = hasReminder;
+        this.recurrence = "NONE";
     }
 
     public long getId() { return id; }
@@ -52,4 +54,7 @@ public class TaskItem implements Serializable {
 
     public boolean isHasReminder() { return hasReminder; }
     public void setHasReminder(boolean hasReminder) { this.hasReminder = hasReminder; }
+
+    public String getRecurrence() { return recurrence != null ? recurrence : "NONE"; }
+    public void setRecurrence(String recurrence) { this.recurrence = recurrence != null ? recurrence : "NONE"; }
 }

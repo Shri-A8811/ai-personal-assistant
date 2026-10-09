@@ -28,7 +28,8 @@ import com.mitaoe.shridhar202401040197.data.model.TaskItem;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.Executors;
+
+import com.mitaoe.shridhar202401040197.util.AppExecutors;
 
 public class NotesFragment extends Fragment {
 
@@ -64,8 +65,15 @@ public class NotesFragment extends Fragment {
 
             @Override
             public void onNoteDelete(NoteItem note) {
-                Executors.newSingleThreadExecutor().execute(() -> db.noteDao().delete(note));
-                Toast.makeText(requireContext(), "Note deleted", Toast.LENGTH_SHORT).show();
+                new AlertDialog.Builder(requireContext())
+                        .setTitle("Delete Note")
+                        .setMessage("Delete \"" + (note.getTitle() != null ? note.getTitle() : "Untitled") + "\"?")
+                        .setPositiveButton("Delete", (dialog, which) -> {
+                            AppExecutors.getInstance().diskIO().execute(() -> db.noteDao().delete(note));
+                            Toast.makeText(requireContext(), "Note deleted", Toast.LENGTH_SHORT).show();
+                        })
+                        .setNegativeButton("Cancel", null)
+                        .show();
             }
 
             @Override
@@ -106,7 +114,7 @@ public class NotesFragment extends Fragment {
                             String clean = line.replaceAll("^[0-9]+[.\\-\\s]+", "").trim();
                             if (!clean.isEmpty()) {
                                 TaskItem task = new TaskItem(clean, "From note: " + note.getTitle(), 0, "MEDIUM", "From Notes", false);
-                                Executors.newSingleThreadExecutor().execute(() -> db.taskDao().insert(task));
+                                AppExecutors.getInstance().diskIO().execute(() -> db.taskDao().insert(task));
                                 count++;
                             }
                         }

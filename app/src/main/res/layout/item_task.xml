@@ -67,6 +67,22 @@
                     android:textSize="10sp"
                     android:textStyle="bold" />
 
+                <!-- Recurrence Badge -->
+                <TextView
+                    android:id="@+id/badgeRecurrence"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="6dp"
+                    android:background="@drawable/bg_badge_free"
+                    android:backgroundTint="@color/accent_gemini_blue"
+                    android:paddingHorizontal="6dp"
+                    android:paddingVertical="2dp"
+                    android:text="🔁 Daily"
+                    android:textColor="@color/white"
+                    android:textSize="10sp"
+                    android:textStyle="bold"
+                    android:visibility="gone" />
+
                 <!-- Due Date / Time -->
                 <TextView
                     android:id="@+id/txtTaskDue"

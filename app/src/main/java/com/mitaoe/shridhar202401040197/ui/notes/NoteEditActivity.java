@@ -1,7 +1,7 @@
 package com.mitaoe.shridhar202401040197.ui.notes;
 
-import android.app.ProgressDialog;
 import android.os.Bundle;
+import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
@@ -17,19 +17,22 @@ import com.mitaoe.shridhar202401040197.data.database.AppDatabase;
 import com.mitaoe.shridhar202401040197.data.model.ChatMessage;
 import com.mitaoe.shridhar202401040197.data.model.NoteItem;
 import com.mitaoe.shridhar202401040197.data.model.TaskItem;
+import com.mitaoe.shridhar202401040197.util.AppExecutors;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.Executors;
 
 public class NoteEditActivity extends AppCompatActivity {
 
     public static final String EXTRA_NOTE = "extra_note";
 
     private EditText editNoteTitle, editNoteContent;
+    private ImageView btnPinNote;
     private NoteItem currentNote;
     private AppDatabase db;
     private AiService aiService;
+    private boolean isPinned = false;
+    private String selectedColorHex = "#1E1E1E";
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -41,6 +44,7 @@ public class NoteEditActivity extends AppCompatActivity {
 
         editNoteTitle = findViewById(R.id.editNoteTitle);
         editNoteContent = findViewById(R.id.editNoteContent);
+        btnPinNote = findViewById(R.id.btnPinNote);
         ImageView btnBack = findViewById(R.id.btnBack);
         Button btnSaveNote = findViewById(R.id.btnSaveNote);
 
@@ -52,7 +56,22 @@ public class NoteEditActivity extends AppCompatActivity {
         if (currentNote != null) {
             editNoteTitle.setText(currentNote.getTitle());
             editNoteContent.setText(currentNote.getContent());
+            isPinned = currentNote.isPinned();
+            if (currentNote.getColorHex() != null) {
+                selectedColorHex = currentNote.getColorHex();
+            }
         }
+        updatePinIcon();
+
+        if (btnPinNote != null) {
+            btnPinNote.setOnClickListener(v -> {
+                isPinned = !isPinned;
+                updatePinIcon();
+                Toast.makeText(this, isPinned ? "Note pinned to top 📌" : "Note unpinned", Toast.LENGTH_SHORT).show();
+            });
+        }
+
+        setupColorPickers();
 
         btnBack.setOnClickListener(v -> finish());
         btnSaveNote.setOnClickListener(v -> saveNoteAndExit());
@@ -60,6 +79,31 @@ public class NoteEditActivity extends AppCompatActivity {
         btnAiSummarize.setOnClickListener(v -> runAiSummarize());
         btnAiExtractTasks.setOnClickListener(v -> runAiExtractTasks());
         btnAiPolish.setOnClickListener(v -> runAiPolish());
+    }
+
+    private void updatePinIcon() {
+        if (btnPinNote != null) {
+            if (isPinned) {
+                btnPinNote.setColorFilter(androidx.core.content.ContextCompat.getColor(this, R.color.electric_cyan));
+            } else {
+                btnPinNote.setColorFilter(androidx.core.content.ContextCompat.getColor(this, R.color.text_muted));
+            }
+        }
+    }
+
+    private void setupColorPickers() {
+        int[] ids = {R.id.colorDefault, R.id.colorBlue, R.id.colorGreen, R.id.colorPurple, R.id.colorAmber, R.id.colorCrimson};
+        String[] colors = {"#1E1E1E", "#1E3A8A", "#065F46", "#581C87", "#78350F", "#881337"};
+        for (int i = 0; i < ids.length; i++) {
+            final String col = colors[i];
+            View v = findViewById(ids[i]);
+            if (v != null) {
+                v.setOnClickListener(view -> {
+                    selectedColorHex = col;
+                    Toast.makeText(this, "Color tag applied", Toast.LENGTH_SHORT).show();
+                });
+            }
+        }
     }
 
     private void saveNoteAndExit() {
@@ -76,13 +120,16 @@ public class NoteEditActivity extends AppCompatActivity {
         }
 
         final String finalTitle = title;
-        Executors.newSingleThreadExecutor().execute(() -> {
+        AppExecutors.getInstance().diskIO().execute(() -> {
             if (currentNote == null) {
-                NoteItem newNote = new NoteItem(finalTitle, content, System.currentTimeMillis(), "General", "#1E1E1E");
+                NoteItem newNote = new NoteItem(finalTitle, content, System.currentTimeMillis(), "General", selectedColorHex);
+                newNote.setPinned(isPinned);
                 db.noteDao().insert(newNote);
             } else {
                 currentNote.setTitle(finalTitle);
                 currentNote.setContent(content);
+                currentNote.setColorHex(selectedColorHex);
+                currentNote.setPinned(isPinned);
                 currentNote.setUpdatedAtMillis(System.currentTimeMillis());
                 db.noteDao().update(currentNote);
             }
@@ -185,7 +232,7 @@ public class NoteEditActivity extends AppCompatActivity {
                         String clean = line.replaceAll("^[0-9]+[.\\-\\s]+", "").trim();
                         if (!clean.isEmpty()) {
                             TaskItem task = new TaskItem(clean, "Extracted from note: " + editNoteTitle.getText().toString(), 0, "MEDIUM", "From Notes", false);
-                            Executors.newSingleThreadExecutor().execute(() -> db.taskDao().insert(task));
+                            AppExecutors.getInstance().diskIO().execute(() -> db.taskDao().insert(task));
                             added++;
                         }
                     }

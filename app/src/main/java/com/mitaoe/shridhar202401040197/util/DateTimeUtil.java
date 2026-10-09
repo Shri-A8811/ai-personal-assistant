@@ -54,22 +54,101 @@ public class DateTimeUtil {
 
     public static long parseNaturalDate(String text) {
         if (text == null) return 0;
-        String lower = text.toLowerCase(Locale.ROOT);
+        String lower = text.toLowerCase(Locale.ROOT).trim();
+        Calendar now = Calendar.getInstance();
         Calendar cal = Calendar.getInstance();
 
+        // 1. Relative offsets: "in 2 hours", "in 30 mins", "in 15 minutes"
+        Pattern relativePattern = Pattern.compile("\\bin\\s+(\\d+)\\s*(hour|hr|minute|min)s?\\b");
+        Matcher relMatcher = relativePattern.matcher(lower);
+        if (relMatcher.find()) {
+            try {
+                int amount = Integer.parseInt(relMatcher.group(1));
+                String unit = relMatcher.group(2);
+                if (unit != null && unit.startsWith("h")) {
+                    cal.add(Calendar.HOUR_OF_DAY, amount);
+                } else {
+                    cal.add(Calendar.MINUTE, amount);
+                }
+                cal.set(Calendar.SECOND, 0);
+                cal.set(Calendar.MILLISECOND, 0);
+                return cal.getTimeInMillis();
+            } catch (Exception ignored) {}
+        }
+
         boolean dateSet = false;
+        int defaultHour = 9;
+
+        // 2. Relative Days
         if (lower.contains("tomorrow")) {
             cal.add(Calendar.DAY_OF_YEAR, 1);
             dateSet = true;
-        } else if (lower.contains("today") || lower.contains("tonight")) {
+        } else if (lower.contains("tonight")) {
+            dateSet = true;
+            defaultHour = 20; // 8 PM
+        } else if (lower.contains("today")) {
             dateSet = true;
         }
 
-        // Search for time pattern with explicit time indicators:
+        // 3. Weekday matching ("next monday", "on friday", etc.)
+        String[] days = {"sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"};
+        for (int i = 0; i < days.length; i++) {
+            Pattern dayPattern = Pattern.compile("\\b(?:next\\s+|on\\s+)?(" + days[i] + ")\\b");
+            Matcher dayMatcher = dayPattern.matcher(lower);
+            if (dayMatcher.find()) {
+                int targetDayOfWeek = i + 1; // Calendar.SUNDAY = 1, MONDAY = 2...
+                int currentDayOfWeek = now.get(Calendar.DAY_OF_WEEK);
+                int daysToAdd = (targetDayOfWeek - currentDayOfWeek + 7) % 7;
+                if (daysToAdd == 0 || lower.contains("next " + days[i])) {
+                    daysToAdd += 7;
+                }
+                cal.setTimeInMillis(now.getTimeInMillis());
+                cal.add(Calendar.DAY_OF_YEAR, daysToAdd);
+                dateSet = true;
+                break;
+            }
+        }
+
+        // 4. Month date matching: "on 15 oct", "15 october", "oct 15"
+        String[] months = {"jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"};
+        for (int m = 0; m < months.length; m++) {
+            // "15 oct" or "15th october"
+            Pattern mPattern1 = Pattern.compile("\\b(\\d{1,2})(?:st|nd|rd|th)?\\s+" + months[m] + "[a-z]*\\b");
+            Matcher mMatch1 = mPattern1.matcher(lower);
+            if (mMatch1.find()) {
+                try {
+                    int day = Integer.parseInt(mMatch1.group(1));
+                    cal.set(Calendar.MONTH, m);
+                    cal.set(Calendar.DAY_OF_MONTH, day);
+                    if (cal.before(now)) {
+                        cal.add(Calendar.YEAR, 1);
+                    }
+                    dateSet = true;
+                    break;
+                } catch (Exception ignored) {}
+            }
+
+            // "oct 15" or "october 15th"
+            Pattern mPattern2 = Pattern.compile("\\b" + months[m] + "[a-z]*\\s+(\\d{1,2})(?:st|nd|rd|th)?\\b");
+            Matcher mMatch2 = mPattern2.matcher(lower);
+            if (mMatch2.find()) {
+                try {
+                    int day = Integer.parseInt(mMatch2.group(1));
+                    cal.set(Calendar.MONTH, m);
+                    cal.set(Calendar.DAY_OF_MONTH, day);
+                    if (cal.before(now)) {
+                        cal.add(Calendar.YEAR, 1);
+                    }
+                    dateSet = true;
+                    break;
+                } catch (Exception ignored) {}
+            }
+        }
+
+        // 5. Explicit time search:
         // (1) with am/pm (e.g. 5pm, 6:30 am)
         // (2) with colon (e.g. 14:30, 5:00)
         // (3) preceded by 'at' or '@' (e.g. at 5, @ 6)
-        // (4) followed by o'clock
         Pattern timePattern = Pattern.compile("(?i)(?:\\b(at|@)\\s*)?(\\b\\d{1,2})(?::(\\d{2}))?\\s*(am|pm|o'clock)?\\b");
         Matcher matcher = timePattern.matcher(lower);
 
@@ -87,7 +166,6 @@ public class DateTimeUtil {
                 boolean hasColon = mStr != null && !mStr.isEmpty();
                 boolean hasSuffix = suffix != null && !suffix.isEmpty();
 
-                // If it's a naked number with no time signals, skip it (e.g. "2" apples, chapter "4")
                 if (!hasPrefix && !hasColon && !hasSuffix) {
                     continue;
                 }
@@ -119,10 +197,10 @@ public class DateTimeUtil {
         }
 
         if (dateSet) {
-            // Default 9:00 AM
-            cal.set(Calendar.HOUR_OF_DAY, 9);
+            cal.set(Calendar.HOUR_OF_DAY, defaultHour);
             cal.set(Calendar.MINUTE, 0);
             cal.set(Calendar.SECOND, 0);
+            cal.set(Calendar.MILLISECOND, 0);
             return cal.getTimeInMillis();
         }
 

@@ -1,12 +1,14 @@
 package com.mitaoe.shridhar202401040197.ai;
 
 import android.content.Context;
+import android.net.Uri;
 import android.os.Handler;
 import android.os.Looper;
 
 import com.mitaoe.shridhar202401040197.data.model.AiModel;
 import com.mitaoe.shridhar202401040197.data.model.ChatMessage;
 import com.mitaoe.shridhar202401040197.data.preference.PreferenceManager;
+import com.mitaoe.shridhar202401040197.util.ImageUtil;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -41,12 +43,14 @@ public class AiService {
     }
 
     private static final MediaType JSON_MEDIA = MediaType.get("application/json; charset=utf-8");
+    private final Context context;
     private final PreferenceManager prefManager;
     private final OkHttpClient client;
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
     private final ExecutorService executor = Executors.newFixedThreadPool(4);
 
     public AiService(Context context) {
+        this.context = context.getApplicationContext();
         this.prefManager = new PreferenceManager(context);
         this.client = new OkHttpClient.Builder()
                 .connectTimeout(30, TimeUnit.SECONDS)
@@ -56,6 +60,10 @@ public class AiService {
     }
 
     public void generateResponse(List<ChatMessage> conversationHistory, String userPrompt, StreamCallback callback) {
+        generateResponse(conversationHistory, userPrompt, null, callback);
+    }
+
+    public void generateResponse(List<ChatMessage> conversationHistory, String userPrompt, String imageUriStr, StreamCallback callback) {
         mainHandler.post(callback::onStart);
 
         executor.execute(() -> {
@@ -73,13 +81,22 @@ public class AiService {
                 return;
             }
 
+            ImageUtil.EncodedImage encodedImage = null;
+            if (imageUriStr != null && !imageUriStr.isEmpty()) {
+                try {
+                    encodedImage = ImageUtil.encodeUriToBase64(context, Uri.parse(imageUriStr));
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+
             try {
                 if ("anthropic".equalsIgnoreCase(provider)) {
-                    sendAnthropicRequest(apiKey, modelId, conversationHistory, userPrompt, callback);
+                    sendAnthropicRequest(apiKey, modelId, conversationHistory, userPrompt, encodedImage, callback);
                 } else if ("gemini".equalsIgnoreCase(provider)) {
-                    sendGeminiNativeRequest(apiKey, modelId, conversationHistory, userPrompt, callback);
+                    sendGeminiNativeRequest(apiKey, modelId, conversationHistory, userPrompt, encodedImage, callback);
                 } else {
-                    sendOpenAiCompatibleRequest(provider, apiKey, modelId, conversationHistory, userPrompt, callback);
+                    sendOpenAiCompatibleRequest(provider, apiKey, modelId, conversationHistory, userPrompt, encodedImage, callback);
                 }
             } catch (Exception e) {
                 mainHandler.post(() -> callback.onError("Network error: " + e.getMessage()));
@@ -105,7 +122,8 @@ public class AiService {
     }
 
     private void sendOpenAiCompatibleRequest(String provider, String apiKey, String modelId,
-                                            List<ChatMessage> history, String userPrompt, StreamCallback callback) {
+                                            List<ChatMessage> history, String userPrompt, 
+                                            ImageUtil.EncodedImage encodedImage, StreamCallback callback) {
         try {
             JSONObject body = new JSONObject();
             body.put("model", modelId);
@@ -115,7 +133,7 @@ public class AiService {
             // System prompt
             JSONObject sysMsg = new JSONObject();
             sysMsg.put("role", "system");
-            sysMsg.put("content", "You are an intelligent, concise, and helpful personal AI assistant. You help manage tasks, notes, reminders, and answer user queries cleanly.");
+            sysMsg.put("content", getFullSystemPrompt());
             messages.put(sysMsg);
 
             // History
@@ -133,7 +151,24 @@ public class AiService {
             // Current prompt
             JSONObject currentMsg = new JSONObject();
             currentMsg.put("role", "user");
-            currentMsg.put("content", userPrompt);
+            if (encodedImage != null) {
+                JSONArray parts = new JSONArray();
+                JSONObject textPart = new JSONObject();
+                textPart.put("type", "text");
+                textPart.put("text", (userPrompt != null && !userPrompt.trim().isEmpty()) ? userPrompt : "Analyze and describe this image.");
+                parts.put(textPart);
+
+                JSONObject imagePart = new JSONObject();
+                imagePart.put("type", "image_url");
+                JSONObject imageUrlObj = new JSONObject();
+                imageUrlObj.put("url", "data:" + encodedImage.mimeType + ";base64," + encodedImage.base64);
+                imagePart.put("image_url", imageUrlObj);
+                parts.put(imagePart);
+
+                currentMsg.put("content", parts);
+            } else {
+                currentMsg.put("content", userPrompt != null ? userPrompt : "");
+            }
             messages.put(currentMsg);
 
             body.put("messages", messages);
@@ -203,11 +238,13 @@ public class AiService {
     }
 
     private void sendAnthropicRequest(String apiKey, String modelId,
-                                      List<ChatMessage> history, String userPrompt, StreamCallback callback) {
+                                      List<ChatMessage> history, String userPrompt, 
+                                      ImageUtil.EncodedImage encodedImage, StreamCallback callback) {
         try {
             JSONObject body = new JSONObject();
             body.put("model", modelId);
             body.put("max_tokens", 2048);
+            body.put("system", getFullSystemPrompt());
 
             JSONArray messages = new JSONArray();
             if (history != null) {
@@ -222,7 +259,26 @@ public class AiService {
             }
             JSONObject currentMsg = new JSONObject();
             currentMsg.put("role", "user");
-            currentMsg.put("content", userPrompt);
+            if (encodedImage != null) {
+                JSONArray contentArray = new JSONArray();
+                JSONObject imgPart = new JSONObject();
+                imgPart.put("type", "image");
+                JSONObject source = new JSONObject();
+                source.put("type", "base64");
+                source.put("media_type", encodedImage.mimeType);
+                source.put("data", encodedImage.base64);
+                imgPart.put("source", source);
+                contentArray.put(imgPart);
+
+                JSONObject textPart = new JSONObject();
+                textPart.put("type", "text");
+                textPart.put("text", (userPrompt != null && !userPrompt.trim().isEmpty()) ? userPrompt : "Analyze and describe this image.");
+                contentArray.put(textPart);
+
+                currentMsg.put("content", contentArray);
+            } else {
+                currentMsg.put("content", userPrompt != null ? userPrompt : "");
+            }
             messages.put(currentMsg);
 
             body.put("messages", messages);
@@ -258,7 +314,8 @@ public class AiService {
     }
 
     private void sendGeminiNativeRequest(String apiKey, String modelId,
-                                        List<ChatMessage> history, String userPrompt, StreamCallback callback) {
+                                        List<ChatMessage> history, String userPrompt, 
+                                        ImageUtil.EncodedImage encodedImage, StreamCallback callback) {
         try {
             String cleanModel = modelId.startsWith("models/") ? modelId.substring(7) : modelId;
             String url = "https://generativelanguage.googleapis.com/v1beta/models/" + cleanModel + ":generateContent?key=" + apiKey;
@@ -266,9 +323,18 @@ public class AiService {
             JSONObject root = new JSONObject();
             JSONArray contents = new JSONArray();
 
-            JSONObject userPart = new JSONObject();
-            userPart.put("text", userPrompt);
             JSONArray partsArray = new JSONArray();
+            if (encodedImage != null) {
+                JSONObject imgPart = new JSONObject();
+                JSONObject inlineData = new JSONObject();
+                inlineData.put("mime_type", encodedImage.mimeType);
+                inlineData.put("data", encodedImage.base64);
+                imgPart.put("inline_data", inlineData);
+                partsArray.put(imgPart);
+            }
+
+            JSONObject userPart = new JSONObject();
+            userPart.put("text", (userPrompt != null && !userPrompt.trim().isEmpty()) ? userPrompt : "Analyze and describe this image.");
             partsArray.put(userPart);
 
             JSONObject contentObj = new JSONObject();
@@ -277,6 +343,17 @@ public class AiService {
             contents.put(contentObj);
 
             root.put("contents", contents);
+
+            String systemInstruction = getFullSystemPrompt();
+            if (systemInstruction != null && !systemInstruction.trim().isEmpty()) {
+                JSONObject sysObj = new JSONObject();
+                JSONArray sysParts = new JSONArray();
+                JSONObject sysTextPart = new JSONObject();
+                sysTextPart.put("text", systemInstruction);
+                sysParts.put(sysTextPart);
+                sysObj.put("parts", sysParts);
+                root.put("system_instruction", sysObj);
+            }
 
             Request request = new Request.Builder()
                     .url(url)
@@ -531,5 +608,25 @@ public class AiService {
                 mainHandler.post(() -> callback.onError("Error: " + e.getMessage()));
             }
         });
+    }
+
+    private String getFullSystemPrompt() {
+        String basePrompt = prefManager.getEffectiveSystemPrompt();
+        if (prefManager.isChatWithNotesEnabled()) {
+            try {
+                List<com.mitaoe.shridhar202401040197.data.model.NoteItem> notes = 
+                    com.mitaoe.shridhar202401040197.data.database.AppDatabase.getInstance(context).noteDao().getAllNotesSync();
+                if (notes != null && !notes.isEmpty()) {
+                    StringBuilder sb = new StringBuilder("\n\n[User's Saved Notes for Reference]:\n");
+                    int count = Math.min(notes.size(), 8);
+                    for (int i = 0; i < count; i++) {
+                        com.mitaoe.shridhar202401040197.data.model.NoteItem note = notes.get(i);
+                        sb.append("• ").append(note.getTitle()).append(": ").append(note.getContent()).append("\n");
+                    }
+                    return basePrompt + sb.toString();
+                }
+            } catch (Exception ignored) {}
+        }
+        return basePrompt;
     }
 }

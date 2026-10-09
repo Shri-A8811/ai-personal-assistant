@@ -92,6 +92,14 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
             holder.txtTaskDue.setVisibility(View.GONE);
         }
 
+        // Recurrence Badge
+        if (task.getRecurrence() != null && !task.getRecurrence().equalsIgnoreCase("NONE")) {
+            holder.badgeRecurrence.setVisibility(View.VISIBLE);
+            holder.badgeRecurrence.setText("🔁 " + ("DAILY".equalsIgnoreCase(task.getRecurrence()) ? "Daily" : "Weekly"));
+        } else {
+            holder.badgeRecurrence.setVisibility(View.GONE);
+        }
+
         // Reminder Icon
         holder.imgHasReminder.setVisibility(task.isHasReminder() ? View.VISIBLE : View.GONE);
 
@@ -115,7 +123,7 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
 
     static class TaskViewHolder extends RecyclerView.ViewHolder {
         CheckBox checkTaskCompleted;
-        TextView txtTaskTitle, txtTaskDescription, badgePriority, txtTaskDue;
+        TextView txtTaskTitle, txtTaskDescription, badgePriority, badgeRecurrence, txtTaskDue;
         ImageView imgHasReminder, btnDeleteTask;
 
         public TaskViewHolder(@NonNull View itemView) {
@@ -124,6 +132,7 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
             txtTaskTitle = itemView.findViewById(R.id.txtTaskTitle);
             txtTaskDescription = itemView.findViewById(R.id.txtTaskDescription);
             badgePriority = itemView.findViewById(R.id.badgePriority);
+            badgeRecurrence = itemView.findViewById(R.id.badgeRecurrence);
             txtTaskDue = itemView.findViewById(R.id.txtTaskDue);
             imgHasReminder = itemView.findViewById(R.id.imgHasReminder);
             btnDeleteTask = itemView.findViewById(R.id.btnDeleteTask);

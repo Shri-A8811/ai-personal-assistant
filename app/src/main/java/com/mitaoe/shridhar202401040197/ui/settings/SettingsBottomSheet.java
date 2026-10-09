@@ -4,9 +4,12 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
+import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -87,9 +90,60 @@ public class SettingsBottomSheet extends BottomSheetDialogFragment {
             prefManager.setVoiceAutoSpeakEnabled(isChecked);
         });
 
+        // Persona spinner
+        Spinner spinnerPersona = view.findViewById(R.id.spinnerPersona);
+        if (spinnerPersona != null) {
+            String[] personas = {
+                "General Assistant",
+                "Coder / Developer",
+                "Student Tutor",
+                "Productivity Planner",
+                "Concise / Direct"
+            };
+            ArrayAdapter<String> personaAdapter = new ArrayAdapter<>(requireContext(), android.R.layout.simple_spinner_dropdown_item, personas);
+            spinnerPersona.setAdapter(personaAdapter);
+            String currentPersona = prefManager.getAiPersona();
+            for (int i = 0; i < personas.length; i++) {
+                if (personas[i].equalsIgnoreCase(currentPersona)) {
+                    spinnerPersona.setSelection(i);
+                    break;
+                }
+            }
+            spinnerPersona.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+                @Override
+                public void onItemSelected(AdapterView<?> parent, View v, int position, long id) {
+                    prefManager.setAiPersona(personas[position]);
+                }
+                @Override
+                public void onNothingSelected(AdapterView<?> parent) {}
+            });
+        }
+
+        // Chat with notes switch
+        MaterialSwitch switchChatWithNotes = view.findViewById(R.id.switchChatWithNotes);
+        if (switchChatWithNotes != null) {
+            switchChatWithNotes.setChecked(prefManager.isChatWithNotesEnabled());
+            switchChatWithNotes.setOnCheckedChangeListener((btn, isChecked) -> {
+                prefManager.setChatWithNotesEnabled(isChecked);
+            });
+        }
+
         View.OnClickListener openLibListener = v -> openModelLibrary(null);
         cardOpenModelLibrary.setOnClickListener(openLibListener);
         btnOpenLibraryTop.setOnClickListener(openLibListener);
+
+        View btnExportBackup = view.findViewById(R.id.btnExportBackup);
+        View btnImportBackup = view.findViewById(R.id.btnImportBackup);
+
+        if (btnExportBackup != null) {
+            btnExportBackup.setOnClickListener(v -> {
+                com.mitaoe.shridhar202401040197.util.BackupManager.exportBackupToShare(requireContext());
+            });
+        }
+
+        if (btnImportBackup != null) {
+            btnImportBackup.setOnClickListener(v -> showImportDialog());
+        }
 
         btnCloseSettings.setOnClickListener(v -> dismiss());
         btnDoneSettings.setOnClickListener(v -> {
@@ -98,6 +152,39 @@ public class SettingsBottomSheet extends BottomSheetDialogFragment {
         });
 
         return view;
+    }
+
+    private void showImportDialog() {
+        android.widget.EditText input = new android.widget.EditText(requireContext());
+        input.setHint("Paste JSON backup data here...");
+        input.setMinLines(5);
+        input.setMaxLines(10);
+        input.setPadding(32, 24, 32, 24);
+        input.setTextColor(ContextCompat.getColor(requireContext(), R.color.text_primary));
+
+        new androidx.appcompat.app.AlertDialog.Builder(requireContext())
+                .setTitle("Import Backup JSON")
+                .setView(input)
+                .setPositiveButton("Import", (dialog, which) -> {
+                    String json = input.getText().toString().trim();
+                    if (json.isEmpty()) {
+                        Toast.makeText(requireContext(), "Please paste backup JSON", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                    com.mitaoe.shridhar202401040197.util.BackupManager.importBackupFromJson(requireContext(), json, new com.mitaoe.shridhar202401040197.util.BackupManager.ImportCallback() {
+                        @Override
+                        public void onSuccess(int tasksCount, int notesCount) {
+                            Toast.makeText(requireContext(), "Imported " + tasksCount + " tasks & " + notesCount + " notes! 🎉", Toast.LENGTH_LONG).show();
+                        }
+
+                        @Override
+                        public void onError(String message) {
+                            Toast.makeText(requireContext(), "Import failed: " + message, Toast.LENGTH_LONG).show();
+                        }
+                    });
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
     }
 
     private void updatePinnedSummary() {

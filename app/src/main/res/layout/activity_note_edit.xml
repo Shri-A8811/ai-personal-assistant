@@ -38,6 +38,19 @@
             app:layout_constraintStart_toEndOf="@id/btnBack"
             app:layout_constraintTop_toTopOf="parent" />
 
+        <ImageView
+            android:id="@+id/btnPinNote"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_marginEnd="8dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:padding="6dp"
+            android:src="@drawable/ic_pin"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toStartOf="@id/btnSaveNote"
+            app:layout_constraintTop_toTopOf="parent"
+            app:tint="@color/text_muted" />
+
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnSaveNote"
             android:layout_width="wrap_content"
@@ -78,6 +91,71 @@
                 android:textColorHint="@color/text_muted"
                 android:textSize="20sp"
                 android:textStyle="bold" />
+
+            <!-- Color Tags Selection -->
+            <LinearLayout
+                android:id="@+id/layoutColorTags"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Color Tag: "
+                    android:textColor="@color/text_muted"
+                    android:textSize="12sp" />
+
+                <View
+                    android:id="@+id/colorDefault"
+                    android:layout_width="22dp"
+                    android:layout_height="22dp"
+                    android:layout_marginStart="8dp"
+                    android:background="@drawable/bg_model_pill"
+                    android:backgroundTint="#2D3748" />
+
+                <View
+                    android:id="@+id/colorBlue"
+                    android:layout_width="22dp"
+                    android:layout_height="22dp"
+                    android:layout_marginStart="8dp"
+                    android:background="@drawable/bg_model_pill"
+                    android:backgroundTint="#1E3A8A" />
+
+                <View
+                    android:id="@+id/colorGreen"
+                    android:layout_width="22dp"
+                    android:layout_height="22dp"
+                    android:layout_marginStart="8dp"
+                    android:background="@drawable/bg_model_pill"
+                    android:backgroundTint="#065F46" />
+
+                <View
+                    android:id="@+id/colorPurple"
+                    android:layout_width="22dp"
+                    android:layout_height="22dp"
+                    android:layout_marginStart="8dp"
+                    android:background="@drawable/bg_model_pill"
+                    android:backgroundTint="#581C87" />
+
+                <View
+                    android:id="@+id/colorAmber"
+                    android:layout_width="22dp"
+                    android:layout_height="22dp"
+                    android:layout_marginStart="8dp"
+                    android:background="@drawable/bg_model_pill"
+                    android:backgroundTint="#78350F" />
+
+                <View
+                    android:id="@+id/colorCrimson"
+                    android:layout_width="22dp"
+                    android:layout_height="22dp"
+                    android:layout_marginStart="8dp"
+                    android:background="@drawable/bg_model_pill"
+                    android:backgroundTint="#881337" />
+            </LinearLayout>
 
             <View
                 android:layout_width="match_parent"

@@ -36,7 +36,8 @@ import com.mitaoe.shridhar202401040197.util.VoiceAssistantHelper;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.Executors;
+
+import com.mitaoe.shridhar202401040197.util.AppExecutors;
 
 public class ChatFragment extends Fragment {
 
@@ -116,7 +117,7 @@ public class ChatFragment extends Fragment {
         setupStarterChips();
 
         // Load latest conversation or start fresh
-        Executors.newSingleThreadExecutor().execute(() -> {
+        AppExecutors.getInstance().diskIO().execute(() -> {
             Conversation latest = db.conversationDao().getLatestConversationSync();
             long initConvId = latest != null ? latest.getId() : 0;
             if (isAdded()) {
@@ -248,11 +249,12 @@ public class ChatFragment extends Fragment {
         layoutWelcome.setVisibility(View.GONE);
         recyclerChat.setVisibility(View.VISIBLE);
 
-        Executors.newSingleThreadExecutor().execute(() -> {
+        AppExecutors.getInstance().diskIO().execute(() -> {
+            String promptText = input.isEmpty() && imageUriStr != null ? "Analyze this image" : input;
+
             // If new conversation, create conversation record first
             if (currentConversationId == 0) {
-                String title = input.length() > 32 ? input.substring(0, 32) + "..." : input;
-                if (title.isEmpty()) title = "Image Query";
+                String title = promptText.length() > 32 ? promptText.substring(0, 32) + "..." : promptText;
                 Conversation conv = new Conversation(title, System.currentTimeMillis(), System.currentTimeMillis(), prefManager.getActiveModelName());
                 currentConversationId = db.conversationDao().insert(conv);
 
@@ -270,35 +272,37 @@ public class ChatFragment extends Fragment {
             }
 
             // 1. Insert User Message
-            ChatMessage userMsg = new ChatMessage(input, true, System.currentTimeMillis(), "User");
+            ChatMessage userMsg = new ChatMessage(promptText, true, System.currentTimeMillis(), "User");
             userMsg.setConversationId(currentConversationId);
             if (imageUriStr != null) userMsg.setImageUri(imageUriStr);
             db.chatDao().insert(userMsg);
 
-            // 2. Check Natural Language Actions
-            NaturalLanguageActionParser.ActionResult actionResult = NaturalLanguageActionParser.parseAndExecute(requireContext(), input);
+            // 2. Check Natural Language Actions (only if no image attached)
+            if (imageUriStr == null) {
+                NaturalLanguageActionParser.ActionResult actionResult = NaturalLanguageActionParser.parseAndExecute(requireContext(), input);
 
-            if (actionResult.type != NaturalLanguageActionParser.ActionType.NONE && actionResult.isSuccess) {
-                ChatMessage assistantMsg = new ChatMessage(
-                        actionResult.confirmationMessage,
-                        false,
-                        System.currentTimeMillis(),
-                        prefManager.getActiveModelName()
-                );
-                assistantMsg.setConversationId(currentConversationId);
-                assistantMsg.setHasAction(true);
-                assistantMsg.setActionType(actionResult.type.name());
-                assistantMsg.setActionTitle(actionResult.title);
+                if (actionResult.type != NaturalLanguageActionParser.ActionType.NONE && actionResult.isSuccess) {
+                    ChatMessage assistantMsg = new ChatMessage(
+                            actionResult.confirmationMessage,
+                            false,
+                            System.currentTimeMillis(),
+                            prefManager.getActiveModelName()
+                    );
+                    assistantMsg.setConversationId(currentConversationId);
+                    assistantMsg.setHasAction(true);
+                    assistantMsg.setActionType(actionResult.type.name());
+                    assistantMsg.setActionTitle(actionResult.title);
 
-                db.chatDao().insert(assistantMsg);
+                    db.chatDao().insert(assistantMsg);
 
-                if (prefManager.isVoiceAutoSpeakEnabled()) {
-                    voiceHelper.speak(actionResult.confirmationMessage);
+                    if (prefManager.isVoiceAutoSpeakEnabled()) {
+                        voiceHelper.speak(actionResult.confirmationMessage);
+                    }
+                    return;
                 }
-                return;
             }
 
-            // 3. Regular AI Query via Multi-Provider Streaming
+            // 3. Regular AI Query via Multi-Provider Streaming (with vision if image attached)
             String activeModelName = prefManager.getActiveModelName();
             ChatMessage pendingMsg = new ChatMessage("Thinking...", false, System.currentTimeMillis(), activeModelName);
             pendingMsg.setConversationId(currentConversationId);
@@ -310,7 +314,7 @@ public class ChatFragment extends Fragment {
                 });
             }
 
-            aiService.generateResponse(currentHistory, input, new AiService.StreamCallback() {
+            aiService.generateResponse(currentHistory, promptText, imageUriStr, new AiService.StreamCallback() {
                 @Override public void onStart() {}
 
                 @Override
@@ -327,7 +331,7 @@ public class ChatFragment extends Fragment {
                         chatAdapter.updateLastMessage(fullResponse);
                     }
                     pendingMsg.setText(fullResponse);
-                    Executors.newSingleThreadExecutor().execute(() -> {
+                    AppExecutors.getInstance().diskIO().execute(() -> {
                         db.chatDao().insert(pendingMsg);
                     });
 
@@ -343,7 +347,7 @@ public class ChatFragment extends Fragment {
                         chatAdapter.updateLastMessage(errorNotice);
                     }
                     pendingMsg.setText(errorNotice);
-                    Executors.newSingleThreadExecutor().execute(() -> {
+                    AppExecutors.getInstance().diskIO().execute(() -> {
                         db.chatDao().insert(pendingMsg);
                     });
                 }

@@ -24,7 +24,7 @@ public class AuthActivity extends AppCompatActivity {
     private TabLayout tabAuthMode;
     private TextInputLayout layoutName, layoutEmail, layoutPassword;
     private TextInputEditText edtName, edtEmail, edtPassword;
-    private MaterialButton btnSubmitAuth;
+    private MaterialButton btnSubmitAuth, btnGuestMode;
     private TextView txtAuthSubtitle;
 
     private boolean isSignUpMode = true;
@@ -51,7 +51,18 @@ public class AuthActivity extends AppCompatActivity {
         edtEmail = findViewById(R.id.edtEmail);
         edtPassword = findViewById(R.id.edtPassword);
         btnSubmitAuth = findViewById(R.id.btnSubmitAuth);
+        btnGuestMode = findViewById(R.id.btnGuestMode);
         txtAuthSubtitle = findViewById(R.id.txtAuthSubtitle);
+
+        // If an account already exists on device, select Sign In tab by default
+        if (prefManager.hasAccount()) {
+            TabLayout.Tab loginTab = tabAuthMode.getTabAt(1);
+            if (loginTab != null) {
+                loginTab.select();
+                isSignUpMode = false;
+            }
+        }
+        updateUiForMode();
 
         tabAuthMode.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
             @Override
@@ -65,9 +76,19 @@ public class AuthActivity extends AppCompatActivity {
         });
 
         btnSubmitAuth.setOnClickListener(v -> handleSubmit());
+
+        if (btnGuestMode != null) {
+            btnGuestMode.setOnClickListener(v -> {
+                prefManager.setGuestSession();
+                Toast.makeText(this, "Welcome! Using local Guest session.", Toast.LENGTH_SHORT).show();
+                launchMainActivity();
+            });
+        }
     }
 
     private void updateUiForMode() {
+        layoutEmail.setError(null);
+        layoutPassword.setError(null);
         if (isSignUpMode) {
             layoutName.setVisibility(View.VISIBLE);
             btnSubmitAuth.setText("Create Account");
@@ -110,21 +131,31 @@ public class AuthActivity extends AppCompatActivity {
         if (isSignUpMode) {
             prefManager.saveUser(name, email, password);
             Toast.makeText(this, "Welcome, " + name + "! Account created.", Toast.LENGTH_SHORT).show();
+            launchMainActivity();
         } else {
-            String savedName = prefManager.getUserName();
-            if ("User".equalsIgnoreCase(savedName)) {
-                // Infer name from email username if not previously saved
-                String inferredName = email.split("@")[0];
-                if (inferredName.length() > 0) {
-                    inferredName = Character.toUpperCase(inferredName.charAt(0)) + inferredName.substring(1);
+            if (!prefManager.hasAccount()) {
+                Toast.makeText(this, "No saved account found. Please sign up first.", Toast.LENGTH_LONG).show();
+                TabLayout.Tab signUpTab = tabAuthMode.getTabAt(0);
+                if (signUpTab != null) {
+                    signUpTab.select();
                 }
-                savedName = inferredName;
+                return;
             }
-            prefManager.saveUser(savedName, email, password);
-            Toast.makeText(this, "Welcome back, " + savedName + "!", Toast.LENGTH_SHORT).show();
-        }
 
-        launchMainActivity();
+            if (!prefManager.getUserEmail().equalsIgnoreCase(email)) {
+                layoutEmail.setError("No account matches this email address");
+                return;
+            }
+
+            if (!prefManager.verifyCredentials(email, password)) {
+                layoutPassword.setError("Incorrect password. Please try again.");
+                return;
+            }
+
+            prefManager.login();
+            Toast.makeText(this, "Welcome back, " + prefManager.getUserName() + "!", Toast.LENGTH_SHORT).show();
+            launchMainActivity();
+        }
     }
 
     private void launchMainActivity() {

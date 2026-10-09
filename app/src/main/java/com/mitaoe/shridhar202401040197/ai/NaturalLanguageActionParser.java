@@ -27,11 +27,12 @@ public class NaturalLanguageActionParser {
         public String details = "";
         public long dueMillis = 0;
         public String priority = "MEDIUM";
+        public String recurrence = "NONE";
         public String confirmationMessage = "";
         public boolean isSuccess = false;
     }
 
-    public static ActionResult parseAndExecute(Context context, String userInput) {
+    public static ActionResult parseIntent(String userInput) {
         ActionResult result = new ActionResult();
         if (userInput == null || userInput.trim().isEmpty()) return result;
 
@@ -46,11 +47,6 @@ public class NaturalLanguageActionParser {
             String title = content.length() > 30 ? content.substring(0, 30) + "..." : content;
             result.title = title;
             result.details = content;
-
-            AppDatabase db = AppDatabase.getInstance(context);
-            NoteItem note = new NoteItem(title, content, System.currentTimeMillis(), "Assistant", "#1E1E1E");
-            long id = db.noteDao().insert(note);
-            result.isSuccess = id > 0;
             result.confirmationMessage = "📝 Note saved:\n**" + title + "**";
             return result;
         }
@@ -75,13 +71,22 @@ public class NaturalLanguageActionParser {
             long dueMillis = DateTimeUtil.parseNaturalDate(userInput);
             result.dueMillis = dueMillis;
 
+            // Recurrence detection
+            String recurrence = "NONE";
+            if (lower.contains("every day") || lower.contains("daily")) {
+                recurrence = "DAILY";
+            } else if (lower.contains("every week") || lower.contains("weekly")) {
+                recurrence = "WEEKLY";
+            }
+            result.recurrence = recurrence;
+
             // Extract Title
             String cleaned = userInput.replaceFirst("(?i)^(remind me to\\s*|set a reminder for\\s*|reminder:\\s*|remind me\\s*|add task:?\\s*|new task:?\\s*|create task:?\\s*)", "").trim();
 
-            // Strip time phrases from title for clean display
-            cleaned = cleaned.replaceAll("(?i)(tomorrow|today|tonight|at \\d{1,2}(:\\d{2})?\\s*(am|pm)?|with (high|low|medium) priority)", "").trim();
-            if (cleaned.endsWith("at") || cleaned.endsWith("on") || cleaned.endsWith("for")) {
-                cleaned = cleaned.substring(0, cleaned.length() - 2).trim();
+            // Strip time and recurrence phrases from title for clean display
+            cleaned = cleaned.replaceAll("(?i)(every day|daily|every week|weekly|tomorrow|today|tonight|at \\d{1,2}(:\\d{2})?\\s*(am|pm)?|with (high|low|medium) priority)", "").trim();
+            if (cleaned.endsWith("at") || cleaned.endsWith("on") || cleaned.endsWith("for") || cleaned.endsWith("every")) {
+                cleaned = cleaned.substring(0, cleaned.lastIndexOf(' ')).trim();
             }
 
             if (cleaned.isEmpty()) cleaned = "Personal Reminder";
@@ -89,8 +94,36 @@ public class NaturalLanguageActionParser {
             cleaned = cleaned.substring(0, 1).toUpperCase(Locale.ROOT) + cleaned.substring(1);
             result.title = cleaned;
 
-            // Insert into Database
-            AppDatabase db = AppDatabase.getInstance(context);
+            String repeatStr = !"NONE".equals(recurrence) ? " 🔁 " + ("DAILY".equals(recurrence) ? "Daily" : "Weekly") : "";
+            if (isReminder) {
+                String whenStr = result.dueMillis > 0 ? " for **" + DateTimeUtil.formatDateTime(result.dueMillis) + "**" : "";
+                result.confirmationMessage = "⏰ Reminder scheduled" + whenStr + repeatStr + ":\n**" + result.title + "** (Priority: " + result.priority + ")";
+            } else {
+                String whenStr = result.dueMillis > 0 ? " (Due: " + DateTimeUtil.formatDateTime(result.dueMillis) + ")" : "";
+                result.confirmationMessage = "✅ Task added to your list:\n**" + result.title + "**" + whenStr + repeatStr;
+            }
+
+            return result;
+        }
+
+        return result;
+    }
+
+    public static ActionResult parseAndExecute(Context context, String userInput) {
+        ActionResult result = parseIntent(userInput);
+        if (result.type == ActionType.NONE) return result;
+
+        AppDatabase db = AppDatabase.getInstance(context);
+
+        if (result.type == ActionType.CREATE_NOTE) {
+            NoteItem note = new NoteItem(result.title, result.details, System.currentTimeMillis(), "Assistant", "#1E1E1E");
+            long id = db.noteDao().insert(note);
+            result.isSuccess = id > 0;
+            return result;
+        }
+
+        if (result.type == ActionType.CREATE_REMINDER || result.type == ActionType.CREATE_TASK) {
+            boolean isReminder = result.type == ActionType.CREATE_REMINDER;
             TaskItem task = new TaskItem(
                     result.title,
                     isReminder ? "Created by Assistant reminder" : "Created by Assistant task",
@@ -99,20 +132,13 @@ public class NaturalLanguageActionParser {
                     isReminder ? "Reminders" : "Tasks",
                     isReminder && result.dueMillis > System.currentTimeMillis()
             );
+            task.setRecurrence(result.recurrence);
 
             long taskId = db.taskDao().insert(task);
             result.isSuccess = taskId > 0;
 
             if (task.isHasReminder() && task.getDueDateMillis() > System.currentTimeMillis()) {
                 NotificationHelper.scheduleAlarm(context, taskId, task.getTitle(), task.getDueDateMillis());
-            }
-
-            if (isReminder) {
-                String whenStr = result.dueMillis > 0 ? " for **" + DateTimeUtil.formatDateTime(result.dueMillis) + "**" : "";
-                result.confirmationMessage = "⏰ Reminder scheduled" + whenStr + ":\n**" + result.title + "** (Priority: " + result.priority + ")";
-            } else {
-                String whenStr = result.dueMillis > 0 ? " (Due: " + DateTimeUtil.formatDateTime(result.dueMillis) + ")" : "";
-                result.confirmationMessage = "✅ Task added to your list:\n**" + result.title + "**" + whenStr;
             }
 
             return result;

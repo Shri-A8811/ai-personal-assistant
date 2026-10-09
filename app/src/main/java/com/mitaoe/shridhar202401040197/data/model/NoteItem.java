@@ -16,6 +16,7 @@ public class NoteItem implements Serializable {
     private long updatedAtMillis;
     private String category;
     private String colorHex;
+    private boolean isPinned;
 
     public NoteItem(String title, String content, long updatedAtMillis, String category, String colorHex) {
         this.title = title;
@@ -23,6 +24,7 @@ public class NoteItem implements Serializable {
         this.updatedAtMillis = updatedAtMillis;
         this.category = category != null ? category : "General";
         this.colorHex = colorHex != null ? colorHex : "#1E1E1E";
+        this.isPinned = false;
     }
 
     public long getId() { return id; }
@@ -42,4 +44,7 @@ public class NoteItem implements Serializable {
 
     public String getColorHex() { return colorHex; }
     public void setColorHex(String colorHex) { this.colorHex = colorHex; }
+
+    public boolean isPinned() { return isPinned; }
+    public void setPinned(boolean pinned) { isPinned = pinned; }
 }

@@ -7,9 +7,9 @@ import android.content.Intent;
 import android.widget.Toast;
 
 import com.mitaoe.shridhar202401040197.data.database.AppDatabase;
+import com.mitaoe.shridhar202401040197.data.model.TaskItem;
 import com.mitaoe.shridhar202401040197.service.NotificationHelper;
-
-import java.util.concurrent.Executors;
+import com.mitaoe.shridhar202401040197.util.AppExecutors;
 
 public class NotificationActionReceiver extends BroadcastReceiver {
 
@@ -32,10 +32,26 @@ public class NotificationActionReceiver extends BroadcastReceiver {
         }
 
         if (ACTION_COMPLETE.equals(action)) {
-            Executors.newSingleThreadExecutor().execute(() -> {
-                AppDatabase.getInstance(context).taskDao().setTaskCompleted(taskId, true);
+            AppExecutors.getInstance().diskIO().execute(() -> {
+                AppDatabase db = AppDatabase.getInstance(context);
+                TaskItem task = db.taskDao().getTaskById(taskId);
+                if (task != null && task.getRecurrence() != null && !task.getRecurrence().equalsIgnoreCase("NONE")) {
+                    long nextTrigger = task.getDueDateMillis();
+                    long interval = "DAILY".equalsIgnoreCase(task.getRecurrence()) ? (24L * 60 * 60 * 1000) : (7L * 24 * 60 * 60 * 1000);
+                    while (nextTrigger <= System.currentTimeMillis()) {
+                        nextTrigger += interval;
+                    }
+                    task.setDueDateMillis(nextTrigger);
+                    task.setCompleted(false);
+                    db.taskDao().update(task);
+                    if (task.isHasReminder()) {
+                        NotificationHelper.scheduleAlarm(context, task.getId(), task.getTitle(), nextTrigger);
+                    }
+                } else {
+                    db.taskDao().setTaskCompleted(taskId, true);
+                }
             });
-            Toast.makeText(context, "Task marked as completed! 🎉", Toast.LENGTH_SHORT).show();
+            Toast.makeText(context, "Task completed! 🎉", Toast.LENGTH_SHORT).show();
         } else if (ACTION_SNOOZE.equals(action)) {
             long snoozeUntil = System.currentTimeMillis() + (10 * 60 * 1000); // +10 minutes
             NotificationHelper.scheduleAlarm(context, taskId, taskTitle, snoozeUntil);

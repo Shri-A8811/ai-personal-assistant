@@ -1,5 +1,6 @@
 package com.mitaoe.shridhar202401040197.ui.notes;
 
+import android.graphics.Color;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -7,8 +8,10 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.android.material.card.MaterialCardView;
 import com.mitaoe.shridhar202401040197.R;
 import com.mitaoe.shridhar202401040197.data.model.NoteItem;
 import com.mitaoe.shridhar202401040197.util.DateTimeUtil;
@@ -52,6 +55,30 @@ public class NoteAdapter extends RecyclerView.Adapter<NoteAdapter.NoteViewHolder
         holder.txtNoteContent.setText(note.getContent() != null ? note.getContent() : "");
         holder.txtNoteDate.setText(DateTimeUtil.formatDate(note.getUpdatedAtMillis()));
 
+        // Pin Status
+        if (note.isPinned()) {
+            holder.imgPinStatus.setVisibility(View.VISIBLE);
+        } else {
+            holder.imgPinStatus.setVisibility(View.GONE);
+        }
+
+        // Color Tag Styling
+        String colorHex = note.getColorHex();
+        if (colorHex != null && !colorHex.isEmpty()) {
+            try {
+                int color = Color.parseColor(colorHex);
+                holder.noteColorDot.setBackgroundTintList(android.content.res.ColorStateList.valueOf(color));
+                holder.cardNote.setStrokeColor(color);
+                holder.cardNote.setStrokeWidth(2);
+            } catch (Exception e) {
+                holder.cardNote.setStrokeColor(ContextCompat.getColor(holder.itemView.getContext(), R.color.card_stroke_dark));
+                holder.cardNote.setStrokeWidth(1);
+            }
+        } else {
+            holder.cardNote.setStrokeColor(ContextCompat.getColor(holder.itemView.getContext(), R.color.card_stroke_dark));
+            holder.cardNote.setStrokeWidth(1);
+        }
+
         holder.itemView.setOnClickListener(v -> {
             if (listener != null) listener.onNoteClick(note);
         });
@@ -75,12 +102,17 @@ public class NoteAdapter extends RecyclerView.Adapter<NoteAdapter.NoteViewHolder
     }
 
     static class NoteViewHolder extends RecyclerView.ViewHolder {
+        MaterialCardView cardNote;
+        View noteColorDot;
+        ImageView imgPinStatus, btnDeleteNote;
         TextView txtNoteTitle, txtNoteContent, txtNoteDate;
         TextView chipAiSummarize, chipAiTasks;
-        ImageView btnDeleteNote;
 
         public NoteViewHolder(@NonNull View itemView) {
             super(itemView);
+            cardNote = itemView.findViewById(R.id.cardNote);
+            noteColorDot = itemView.findViewById(R.id.noteColorDot);
+            imgPinStatus = itemView.findViewById(R.id.imgPinStatus);
             txtNoteTitle = itemView.findViewById(R.id.txtNoteTitle);
             txtNoteContent = itemView.findViewById(R.id.txtNoteContent);
             txtNoteDate = itemView.findViewById(R.id.txtNoteDate);

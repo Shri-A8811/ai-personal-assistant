@@ -23,10 +23,10 @@ import com.mitaoe.shridhar202401040197.R;
 import com.mitaoe.shridhar202401040197.data.database.AppDatabase;
 import com.mitaoe.shridhar202401040197.data.model.TaskItem;
 import com.mitaoe.shridhar202401040197.service.NotificationHelper;
+import com.mitaoe.shridhar202401040197.util.AppExecutors;
 import com.mitaoe.shridhar202401040197.util.DateTimeUtil;
 
 import java.util.Calendar;
-import java.util.concurrent.Executors;
 
 public class TaskDialog extends DialogFragment {
 
@@ -53,6 +53,7 @@ public class TaskDialog extends DialogFragment {
         Button btnPickTime = view.findViewById(R.id.btnPickTime);
         RadioGroup radioGroupPriority = view.findViewById(R.id.radioGroupPriority);
         MaterialSwitch switchReminderAlarm = view.findViewById(R.id.switchReminderAlarm);
+        RadioGroup radioGroupRecurrence = view.findViewById(R.id.radioGroupRecurrence);
         Button btnCancel = view.findViewById(R.id.btnCancelTask);
         Button btnSave = view.findViewById(R.id.btnSaveTask);
 
@@ -75,6 +76,14 @@ public class TaskDialog extends DialogFragment {
                 radioGroupPriority.check(R.id.radioPriorityLow);
             } else {
                 radioGroupPriority.check(R.id.radioPriorityMed);
+            }
+
+            if ("DAILY".equalsIgnoreCase(existingTask.getRecurrence())) {
+                radioGroupRecurrence.check(R.id.radioRepeatDaily);
+            } else if ("WEEKLY".equalsIgnoreCase(existingTask.getRecurrence())) {
+                radioGroupRecurrence.check(R.id.radioRepeatWeekly);
+            } else {
+                radioGroupRecurrence.check(R.id.radioRepeatNone);
             }
         } else {
             // Default 1 hour from now
@@ -108,6 +117,17 @@ public class TaskDialog extends DialogFragment {
                 .setView(view)
                 .create();
 
+        switchReminderAlarm.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            if (isChecked && !NotificationHelper.canScheduleExactAlarms(context)) {
+                new AlertDialog.Builder(context)
+                        .setTitle("Exact Alarm Permission")
+                        .setMessage("To ensure your reminder alerts ring exactly on time, Android requires the 'Alarms & Reminders' permission. Open settings now?")
+                        .setPositiveButton("Settings", (d, w) -> NotificationHelper.requestExactAlarmPermission(context))
+                        .setNegativeButton("Cancel", null)
+                        .show();
+            }
+        });
+
         if (dialog.getWindow() != null) {
             dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
         }
@@ -130,11 +150,17 @@ public class TaskDialog extends DialogFragment {
             boolean hasReminder = switchReminderAlarm.isChecked();
             long dueMillis = isDateTimeChosen ? selectedCal.getTimeInMillis() : 0;
 
+            String recurrence = "NONE";
+            int recurrenceId = radioGroupRecurrence.getCheckedRadioButtonId();
+            if (recurrenceId == R.id.radioRepeatDaily) recurrence = "DAILY";
+            else if (recurrenceId == R.id.radioRepeatWeekly) recurrence = "WEEKLY";
+
             AppDatabase db = AppDatabase.getInstance(context);
 
             if (existingTask == null) {
                 TaskItem newTask = new TaskItem(title, desc, dueMillis, priority, "Tasks", hasReminder);
-                Executors.newSingleThreadExecutor().execute(() -> {
+                newTask.setRecurrence(recurrence);
+                AppExecutors.getInstance().diskIO().execute(() -> {
                     long id = db.taskDao().insert(newTask);
                     if (hasReminder && dueMillis > System.currentTimeMillis()) {
                         NotificationHelper.scheduleAlarm(context, id, title, dueMillis);
@@ -147,8 +173,9 @@ public class TaskDialog extends DialogFragment {
                 existingTask.setDueDateMillis(dueMillis);
                 existingTask.setPriority(priority);
                 existingTask.setHasReminder(hasReminder);
+                existingTask.setRecurrence(recurrence);
 
-                Executors.newSingleThreadExecutor().execute(() -> {
+                AppExecutors.getInstance().diskIO().execute(() -> {
                     db.taskDao().update(existingTask);
                     if (hasReminder && dueMillis > System.currentTimeMillis()) {
                         NotificationHelper.scheduleAlarm(context, existingTask.getId(), title, dueMillis);

@@ -204,6 +204,17 @@
                     android:textStyle="bold"
                     app:cornerRadius="26dp" />
 
+                <!-- Continue as Guest Button -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnGuestMode"
+                    style="@style/Widget.Material3.Button.TextButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="44dp"
+                    android:layout_marginTop="8dp"
+                    android:text="Continue as Guest 👤"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="13sp" />
+
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 

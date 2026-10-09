@@ -177,7 +177,7 @@ public class MainActivity extends AppCompatActivity {
                         .setTitle("Delete Conversation")
                         .setMessage("Delete \"" + conversation.getTitle() + "\" and its chat history?")
                         .setPositiveButton("Delete", (d, w) -> {
-                            Executors.newSingleThreadExecutor().execute(() -> {
+                            com.mitaoe.shridhar202401040197.util.AppExecutors.getInstance().diskIO().execute(() -> {
                                 db.conversationDao().deleteMessagesForConversation(conversation.getId());
                                 db.conversationDao().delete(conversation);
                             });
