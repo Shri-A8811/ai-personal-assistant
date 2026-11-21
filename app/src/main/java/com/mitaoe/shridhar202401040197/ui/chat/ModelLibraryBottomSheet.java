@@ -1,5 +1,6 @@
 package com.mitaoe.shridhar202401040197.ui.chat;
 
+import android.content.Context;
 import android.content.res.ColorStateList;
 import android.os.Bundle;
 import android.text.Editable;
@@ -31,6 +32,7 @@ import com.mitaoe.shridhar202401040197.data.preference.PreferenceManager;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class ModelLibraryBottomSheet extends BottomSheetDialogFragment {
 
@@ -59,6 +61,7 @@ public class ModelLibraryBottomSheet extends BottomSheetDialogFragment {
 
     private String currentSearchQuery = "";
     private String currentFilterMode = "all"; // "all", "free", "pinned", or provider name
+    private boolean hasAutoRefreshedOnce = false;
 
     public void setOnModelLibraryListener(OnModelLibraryListener listener) {
         this.listener = listener;
@@ -215,7 +218,8 @@ public class ModelLibraryBottomSheet extends BottomSheetDialogFragment {
             }
         }
 
-        if (allModels.isEmpty()) {
+        if (allModels.isEmpty() && !hasAutoRefreshedOnce) {
+            hasAutoRefreshedOnce = true;
             refreshLiveModels();
         } else {
             applyFilter();
@@ -225,34 +229,32 @@ public class ModelLibraryBottomSheet extends BottomSheetDialogFragment {
     public void refreshLiveModels() {
         List<String> configured = prefManager.getConfiguredProviders();
         if (configured.isEmpty()) {
-            progressLibLoading.setVisibility(View.GONE);
+            if (progressLibLoading != null) progressLibLoading.setVisibility(View.GONE);
             applyFilter();
             return;
         }
 
-        progressLibLoading.setVisibility(View.VISIBLE);
-        int[] pendingCount = {configured.size()};
+        if (progressLibLoading != null) progressLibLoading.setVisibility(View.VISIBLE);
+        final AtomicInteger pendingCount = new AtomicInteger(configured.size());
 
         for (String p : configured) {
             String key = prefManager.getApiKey(p);
             aiService.fetchAvailableModels(p, key, new AiService.ModelFetchCallback() {
                 @Override
                 public void onSuccess(List<AiModel> fetched) {
-                    pendingCount[0]--;
-                    if (isAdded()) {
-                        prefManager.mergeCachedFetchedModels(fetched);
-                        if (pendingCount[0] <= 0) {
-                            progressLibLoading.setVisibility(View.GONE);
-                            loadModels();
-                        }
+                    if (!isAdded() || getView() == null) return;
+                    prefManager.mergeCachedFetchedModels(fetched);
+                    if (pendingCount.decrementAndGet() <= 0) {
+                        if (progressLibLoading != null) progressLibLoading.setVisibility(View.GONE);
+                        loadModels();
                     }
                 }
 
                 @Override
                 public void onError(String error) {
-                    pendingCount[0]--;
-                    if (isAdded() && pendingCount[0] <= 0) {
-                        progressLibLoading.setVisibility(View.GONE);
+                    if (!isAdded() || getView() == null) return;
+                    if (pendingCount.decrementAndGet() <= 0) {
+                        if (progressLibLoading != null) progressLibLoading.setVisibility(View.GONE);
                         loadModels();
                     }
                 }
@@ -318,6 +320,7 @@ public class ModelLibraryBottomSheet extends BottomSheetDialogFragment {
         @Override
         public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
             AiModel model = filteredModels.get(position);
+            Context itemCtx = holder.itemView.getContext();
             holder.txtName.setText(model.getDisplayName());
             holder.txtId.setText(model.getId());
             holder.txtProvider.setText(model.getProvider().toUpperCase());
@@ -328,39 +331,42 @@ public class ModelLibraryBottomSheet extends BottomSheetDialogFragment {
             boolean isPinned = prefManager.isModelPinned(model.getId());
             if (isPinned) {
                 holder.btnPin.setImageResource(R.drawable.ic_pin_filled);
-                holder.btnPin.setColorFilter(ContextCompat.getColor(requireContext(), R.color.accent_gemini_blue));
+                holder.btnPin.setColorFilter(ContextCompat.getColor(itemCtx, R.color.accent_gemini_blue));
             } else {
                 holder.btnPin.setImageResource(R.drawable.ic_pin);
-                holder.btnPin.setColorFilter(ContextCompat.getColor(requireContext(), R.color.text_muted));
+                holder.btnPin.setColorFilter(ContextCompat.getColor(itemCtx, R.color.text_muted));
             }
 
             boolean isActive = model.getId().equalsIgnoreCase(prefManager.getActiveModelId());
             if (isActive) {
-                holder.btnSelectActive.setText("✓ In Use");
-                holder.btnSelectActive.setTextColor(ContextCompat.getColor(requireContext(), R.color.accent_gemini_blue));
-                holder.btnSelectActive.setBackgroundTintList(ColorStateList.valueOf(ContextCompat.getColor(requireContext(), R.color.surface_elevated_dark)));
-                holder.btnSelectActive.setStrokeColor(ColorStateList.valueOf(ContextCompat.getColor(requireContext(), R.color.accent_gemini_blue)));
-                holder.btnSelectActive.setStrokeWidth((int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 1, getResources().getDisplayMetrics()));
+                holder.btnSelectActive.setText("In Use");
+                holder.btnSelectActive.setTextColor(ContextCompat.getColor(itemCtx, R.color.accent_gemini_blue));
+                holder.btnSelectActive.setBackgroundTintList(ColorStateList.valueOf(ContextCompat.getColor(itemCtx, R.color.surface_elevated_dark)));
+                holder.btnSelectActive.setStrokeColor(ColorStateList.valueOf(ContextCompat.getColor(itemCtx, R.color.accent_gemini_blue)));
+                holder.btnSelectActive.setStrokeWidth((int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 1, itemCtx.getResources().getDisplayMetrics()));
             } else {
                 holder.btnSelectActive.setText("Use in Chat");
-                holder.btnSelectActive.setTextColor(ContextCompat.getColor(requireContext(), R.color.white));
-                holder.btnSelectActive.setBackgroundTintList(ColorStateList.valueOf(ContextCompat.getColor(requireContext(), R.color.accent_gemini_blue)));
+                holder.btnSelectActive.setTextColor(ContextCompat.getColor(itemCtx, R.color.on_electric_cyan));
+                holder.btnSelectActive.setBackgroundTintList(ColorStateList.valueOf(ContextCompat.getColor(itemCtx, R.color.accent_gemini_blue)));
                 holder.btnSelectActive.setStrokeWidth(0);
             }
 
             // Pin / Unpin click
             holder.btnPin.setOnClickListener(v -> {
-                boolean currentlyPinned = prefManager.isModelPinned(model.getId());
+                int pos = holder.getBindingAdapterPosition();
+                if (pos == RecyclerView.NO_POSITION) return;
+                AiModel target = filteredModels.get(pos);
+                boolean currentlyPinned = prefManager.isModelPinned(target.getId());
                 if (currentlyPinned) {
-                    prefManager.unpinModel(model.getId());
-                    model.setPinned(false);
-                    Toast.makeText(requireContext(), "Unpinned " + model.getDisplayName(), Toast.LENGTH_SHORT).show();
+                    prefManager.unpinModel(target.getId());
+                    target.setPinned(false);
+                    Toast.makeText(itemCtx, "Unpinned " + target.getDisplayName(), Toast.LENGTH_SHORT).show();
                 } else {
-                    prefManager.pinModel(model);
-                    model.setPinned(true);
-                    Toast.makeText(requireContext(), "📌 Pinned " + model.getDisplayName() + " to chat", Toast.LENGTH_SHORT).show();
+                    prefManager.pinModel(target);
+                    target.setPinned(true);
+                    Toast.makeText(itemCtx, "Pinned " + target.getDisplayName() + " to chat", Toast.LENGTH_SHORT).show();
                 }
-                notifyItemChanged(position);
+                notifyItemChanged(pos);
                 if (listener != null) {
                     listener.onModelsUpdated();
                 }
@@ -368,19 +374,21 @@ public class ModelLibraryBottomSheet extends BottomSheetDialogFragment {
 
             // Select as Active click
             View.OnClickListener selectListener = v -> {
-                prefManager.setActiveProvider(model.getProvider());
-                prefManager.setActiveModelId(model.getId());
-                prefManager.setActiveModelName(model.getDisplayName());
-                // Auto pin if not yet pinned
-                if (!prefManager.isModelPinned(model.getId())) {
-                    prefManager.pinModel(model);
+                int pos = holder.getBindingAdapterPosition();
+                if (pos == RecyclerView.NO_POSITION) return;
+                AiModel target = filteredModels.get(pos);
+                prefManager.setActiveProvider(target.getProvider());
+                prefManager.setActiveModelId(target.getId());
+                prefManager.setActiveModelName(target.getDisplayName());
+                if (!prefManager.isModelPinned(target.getId())) {
+                    prefManager.pinModel(target);
                 }
-                Toast.makeText(requireContext(), "Selected: " + model.getDisplayName(), Toast.LENGTH_SHORT).show();
+                Toast.makeText(itemCtx, "Selected: " + target.getDisplayName(), Toast.LENGTH_SHORT).show();
                 if (listener != null) {
-                    listener.onModelSelected(model);
+                    listener.onModelSelected(target);
                     listener.onModelsUpdated();
                 }
-                dismiss();
+                if (isAdded()) dismissAllowingStateLoss();
             };
 
             holder.btnSelectActive.setOnClickListener(selectListener);

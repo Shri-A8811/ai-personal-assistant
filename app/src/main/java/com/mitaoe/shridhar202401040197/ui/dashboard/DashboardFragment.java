@@ -1,5 +1,7 @@
 package com.mitaoe.shridhar202401040197.ui.dashboard;
 
+import android.app.Activity;
+import android.content.Context;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -89,24 +91,24 @@ public class DashboardFragment extends Fragment {
         taskAdapter = new TaskAdapter(new TaskAdapter.TaskActionListener() {
             @Override
             public void onToggleComplete(TaskItem task, boolean isCompleted) {
-                AppExecutors.getInstance().diskIO().execute(() -> {
-                    task.setCompleted(isCompleted);
-                    db.taskDao().update(task);
-                    if (isCompleted) {
-                        NotificationHelper.cancelAlarm(requireContext(), task.getId());
-                    }
-                });
+                Context ctx = getContext();
+                if (ctx != null) {
+                    com.mitaoe.shridhar202401040197.util.TaskUtil.toggleTaskCompletion(ctx.getApplicationContext(), task, isCompleted);
+                }
             }
 
             @Override
             public void onDeleteTask(TaskItem task) {
-                new AlertDialog.Builder(requireContext())
+                Context ctx = getContext();
+                if (ctx == null) return;
+                final Context appContext = ctx.getApplicationContext();
+                new AlertDialog.Builder(ctx)
                         .setTitle("Delete Task")
                         .setMessage("Delete \"" + (task.getTitle() != null ? task.getTitle() : "task") + "\"?")
                         .setPositiveButton("Delete", (dialog, which) -> {
                             AppExecutors.getInstance().diskIO().execute(() -> {
                                 db.taskDao().delete(task);
-                                NotificationHelper.cancelAlarm(requireContext(), task.getId());
+                                NotificationHelper.cancelAlarm(appContext, task.getId());
                             });
                         })
                         .setNegativeButton("Cancel", null)
@@ -115,46 +117,90 @@ public class DashboardFragment extends Fragment {
 
             @Override
             public void onEditTask(TaskItem task) {
+                if (!isAdded() || getParentFragmentManager().isStateSaved()) return;
                 TaskDialog.newInstance(task).show(getParentFragmentManager(), "EditTaskDialog");
             }
         });
         recyclerDashboardTasks.setAdapter(taskAdapter);
 
-        // Metrics Observation
-        db.taskDao().getCompletedTasks().observe(getViewLifecycleOwner(), completed -> {
-            txtMetricCompleted.setText(String.valueOf(completed != null ? completed.size() : 0));
-        });
-
-        db.taskDao().getPendingTasks().observe(getViewLifecycleOwner(), pending -> {
-            txtMetricPending.setText(String.valueOf(pending != null ? pending.size() : 0));
-        });
-
-        db.noteDao().getAllNotes().observe(getViewLifecycleOwner(), notes -> {
-            txtMetricNotes.setText(String.valueOf(notes != null ? notes.size() : 0));
-        });
-
-        // Tasks Due Today Observation
-        db.taskDao().getTasksDueToday(DateTimeUtil.getEndOfTodayMillis()).observe(getViewLifecycleOwner(), tasks -> {
-            if (tasks != null) {
-                taskAdapter.setTasks(tasks);
-                txtNoTasksToday.setVisibility(tasks.isEmpty() ? View.VISIBLE : View.GONE);
-            }
-        });
-
-        btnRefreshBriefing.setOnClickListener(v -> generateAiBriefing());
-
-        generateAiBriefing();
+        if (btnRefreshBriefing != null) {
+            btnRefreshBriefing.setOnClickListener(v -> {
+                btnRefreshBriefing.animate().rotationBy(360f).setDuration(400).start();
+                generateAiBriefing(true);
+            });
+        }
 
         return view;
     }
 
-    private void generateAiBriefing() {
-        progressBriefing.setVisibility(View.VISIBLE);
-        txtBriefingContent.setText("Preparing your personalized morning briefing...");
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+
+        // Metrics Observation
+        db.taskDao().getCompletedTasks().observe(getViewLifecycleOwner(), completed -> {
+            if (!isAdded() || getView() == null) return;
+            if (txtMetricCompleted != null) {
+                txtMetricCompleted.setText(String.valueOf(completed != null ? completed.size() : 0));
+            }
+        });
+
+        db.taskDao().getPendingTasks().observe(getViewLifecycleOwner(), pending -> {
+            if (!isAdded() || getView() == null) return;
+            if (txtMetricPending != null) {
+                txtMetricPending.setText(String.valueOf(pending != null ? pending.size() : 0));
+            }
+        });
+
+        db.noteDao().getAllNotes().observe(getViewLifecycleOwner(), notes -> {
+            if (!isAdded() || getView() == null) return;
+            if (txtMetricNotes != null) {
+                txtMetricNotes.setText(String.valueOf(notes != null ? notes.size() : 0));
+            }
+        });
+
+        // Tasks Due Today Observation
+        db.taskDao().getTasksDueToday(DateTimeUtil.getEndOfTodayMillis()).observe(getViewLifecycleOwner(), tasks -> {
+            if (!isAdded() || getView() == null) return;
+            if (tasks != null) {
+                if (taskAdapter != null) taskAdapter.setTasks(tasks);
+                if (txtNoTasksToday != null) {
+                    txtNoTasksToday.setVisibility(tasks.isEmpty() ? View.VISIBLE : View.GONE);
+                }
+            }
+        });
+
+        generateAiBriefing(false);
+    }
+
+    private void generateAiBriefing(boolean forceRefresh) {
+        if (!isAdded() || getView() == null) return;
+        if (progressBriefing != null) progressBriefing.setVisibility(View.VISIBLE);
+        if (txtBriefingContent != null) txtBriefingContent.setText("Preparing your personalized morning briefing...");
 
         AppExecutors.getInstance().diskIO().execute(() -> {
             List<TaskItem> pending = db.taskDao().getPendingTasksSync();
             List<NoteItem> notes = db.noteDao().getAllNotesSync();
+
+            String todayDate = DateTimeUtil.formatDate(System.currentTimeMillis());
+            String activeModel = prefManager.getActiveModelId();
+            String signature = todayDate + "_" + pending.size() + "_" + notes.size() + "_" + activeModel;
+
+            if (!forceRefresh) {
+                String cachedSig = prefManager.getCachedBriefingSignature();
+                String cachedText = prefManager.getCachedBriefingText();
+                if (signature.equals(cachedSig) && cachedText != null && !cachedText.isEmpty()) {
+                    Activity act = getActivity();
+                    if (isAdded() && act != null && !act.isFinishing() && !act.isDestroyed()) {
+                        act.runOnUiThread(() -> {
+                            if (!isAdded() || getView() == null) return;
+                            if (progressBriefing != null) progressBriefing.setVisibility(View.GONE);
+                            if (txtBriefingContent != null) txtBriefingContent.setText(cachedText);
+                        });
+                    }
+                    return;
+                }
+            }
 
             StringBuilder contextSummary = new StringBuilder();
             contextSummary.append("Pending tasks count: ").append(pending.size()).append(".\n");
@@ -174,17 +220,22 @@ public class DashboardFragment extends Fragment {
 
                 @Override
                 public void onComplete(String fullResponse) {
-                    if (isAdded()) {
-                        progressBriefing.setVisibility(View.GONE);
-                        txtBriefingContent.setText(fullResponse);
+                    if (fullResponse != null && !fullResponse.trim().isEmpty()) {
+                        prefManager.saveCachedBriefing(signature, fullResponse);
+                    }
+                    if (isAdded() && getView() != null) {
+                        if (progressBriefing != null) progressBriefing.setVisibility(View.GONE);
+                        if (txtBriefingContent != null) txtBriefingContent.setText(fullResponse);
                     }
                 }
 
                 @Override
                 public void onError(String errorMessage) {
-                    if (isAdded()) {
-                        progressBriefing.setVisibility(View.GONE);
-                        txtBriefingContent.setText("Good day! You have " + pending.size() + " pending tasks. Let's make today productive and check off your priorities!");
+                    if (isAdded() && getView() != null) {
+                        if (progressBriefing != null) progressBriefing.setVisibility(View.GONE);
+                        if (txtBriefingContent != null) {
+                            txtBriefingContent.setText("Good day! You have " + pending.size() + " pending tasks. Let's make today productive and check off your priorities.");
+                        }
                     }
                 }
             });
@@ -204,7 +255,7 @@ public class DashboardFragment extends Fragment {
             timeGreeting = "Good evening";
         }
         String name = prefManager.getUserName();
-        txtDashboardGreeting.setText(timeGreeting + ", " + name + " 👋");
+        txtDashboardGreeting.setText(timeGreeting + ", " + name);
     }
 
     private void updateModelsMetric() {

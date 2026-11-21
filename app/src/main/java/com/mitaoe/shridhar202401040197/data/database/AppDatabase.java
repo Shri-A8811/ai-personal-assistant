@@ -31,6 +31,9 @@ public abstract class AppDatabase extends RoomDatabase {
         }
     };
 
+    private static final String TAG = "AppDatabase";
+    private static final String DB_NAME = "ai_personal_assistant.db";
+
     public static final Migration MIGRATION_3_4 = new Migration(3, 4) {
         @Override
         public void migrate(@NonNull SupportSQLiteDatabase database) {
@@ -42,17 +45,56 @@ public abstract class AppDatabase extends RoomDatabase {
         if (INSTANCE == null) {
             synchronized (AppDatabase.class) {
                 if (INSTANCE == null) {
-                    INSTANCE = Room.databaseBuilder(
-                            context.getApplicationContext(),
-                            AppDatabase.class,
-                            "ai_personal_assistant.db"
-                    )
-                    .addMigrations(MIGRATION_2_3, MIGRATION_3_4)
-                    .fallbackToDestructiveMigration()
-                    .build();
+                    Context appContext = context.getApplicationContext();
+                    INSTANCE = buildDatabase(appContext);
+                    // Defensive check: proactively verify database can open and schema validates.
+                    // Narrow recovery to schema/corruption exceptions and preserve a backup copy before rebuild.
+                    try {
+                        INSTANCE.getOpenHelper().getWritableDatabase();
+                    } catch (IllegalStateException | android.database.sqlite.SQLiteException t) {
+                        android.util.Log.e(TAG, "Database schema validation or corruption detected, backing up & rebuilding", t);
+                        try {
+                            INSTANCE.close();
+                        } catch (Exception ignored) {}
+                        backupDatabaseFileQuietly(appContext);
+                        appContext.deleteDatabase(DB_NAME);
+                        INSTANCE = buildDatabase(appContext);
+                        try {
+                            INSTANCE.getOpenHelper().getWritableDatabase();
+                        } catch (Exception ignored) {}
+                    }
                 }
             }
         }
         return INSTANCE;
+    }
+
+    private static void backupDatabaseFileQuietly(Context context) {
+        try {
+            java.io.File src = context.getDatabasePath(DB_NAME);
+            if (src != null && src.exists()) {
+                java.io.File dst = new java.io.File(src.getParentFile(), "ai_personal_assistant_recovery.db");
+                try (java.io.FileInputStream in = new java.io.FileInputStream(src);
+                     java.io.FileOutputStream out = new java.io.FileOutputStream(dst)) {
+                    byte[] buf = new byte[8192];
+                    int len;
+                    while ((len = in.read(buf)) > 0) {
+                        out.write(buf, 0, len);
+                    }
+                }
+            }
+        } catch (Exception ignored) {}
+    }
+
+    private static AppDatabase buildDatabase(Context context) {
+        return Room.databaseBuilder(
+                context,
+                AppDatabase.class,
+                DB_NAME
+        )
+        .addMigrations(MIGRATION_2_3, MIGRATION_3_4)
+        .fallbackToDestructiveMigration()
+        .fallbackToDestructiveMigrationOnDowngrade()
+        .build();
     }
 }

@@ -56,9 +56,9 @@ public class ConversationDrawerAdapter extends RecyclerView.Adapter<Conversation
         holder.txtTime.setText(DateTimeUtil.formatDate(conv.getUpdatedAt()));
 
         if (conv.getId() == selectedConversationId) {
-            holder.itemView.setBackgroundResource(R.drawable.bg_model_pill);
+            holder.itemView.setBackgroundResource(R.drawable.bg_drawer_item_selected);
         } else {
-            holder.itemView.setBackgroundResource(R.drawable.bg_chat_user);
+            holder.itemView.setBackgroundResource(R.drawable.bg_drawer_item_normal);
         }
 
         holder.itemView.setOnClickListener(v -> {

@@ -57,20 +57,22 @@ public class BackupManager {
                 String filename = "AIAssistant_Backup_" + timeStamp + ".json";
 
                 File cacheFile = new File(context.getCacheDir(), filename);
-                FileOutputStream fos = new FileOutputStream(cacheFile);
-                fos.write(jsonOutput.getBytes(StandardCharsets.UTF_8));
-                fos.close();
+                try (FileOutputStream fos = new FileOutputStream(cacheFile)) {
+                    fos.write(jsonOutput.getBytes(StandardCharsets.UTF_8));
+                }
 
+                final Context appContext = context.getApplicationContext();
                 AppExecutors.getInstance().mainThread().execute(() -> {
                     try {
                         Intent shareIntent = new Intent(Intent.ACTION_SEND);
                         shareIntent.setType("application/json");
                         shareIntent.putExtra(Intent.EXTRA_SUBJECT, "AI Assistant Data Backup");
                         shareIntent.putExtra(Intent.EXTRA_TEXT, jsonOutput);
-                        shareIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                        context.startActivity(Intent.createChooser(shareIntent, "Save or Export Backup JSON"));
+                        Intent chooser = Intent.createChooser(shareIntent, "Save or Export Backup JSON");
+                        chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                        appContext.startActivity(chooser);
                     } catch (Exception e) {
-                        Toast.makeText(context, "Export error: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                        Toast.makeText(appContext, "Export error: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                     }
                 });
 
@@ -97,6 +99,21 @@ public class BackupManager {
                     if (tasks != null) {
                         for (TaskItem t : tasks) {
                             t.setId(0); // auto-generate new id
+                            if (t.getTitle() == null || t.getTitle().trim().isEmpty()) {
+                                t.setTitle("Imported Task");
+                            }
+                            if (t.getDescription() == null) {
+                                t.setDescription("");
+                            }
+                            if (t.getPriority() == null || t.getPriority().trim().isEmpty()) {
+                                t.setPriority("MEDIUM");
+                            }
+                            if (t.getCategory() == null || t.getCategory().trim().isEmpty()) {
+                                t.setCategory("General");
+                            }
+                            if (t.getRecurrence() == null || t.getRecurrence().trim().isEmpty()) {
+                                t.setRecurrence("NONE");
+                            }
                             db.taskDao().insert(t);
                             importedTasks++;
                         }
@@ -109,6 +126,18 @@ public class BackupManager {
                     if (notes != null) {
                         for (NoteItem n : notes) {
                             n.setId(0); // auto-generate new id
+                            if (n.getTitle() == null || n.getTitle().trim().isEmpty()) {
+                                n.setTitle("Imported Note");
+                            }
+                            if (n.getContent() == null) {
+                                n.setContent("");
+                            }
+                            if (n.getColorHex() == null || n.getColorHex().trim().isEmpty()) {
+                                n.setColorHex("#1E1E1E");
+                            }
+                            if (n.getCategory() == null || n.getCategory().trim().isEmpty()) {
+                                n.setCategory("General");
+                            }
                             db.noteDao().insert(n);
                             importedNotes++;
                         }

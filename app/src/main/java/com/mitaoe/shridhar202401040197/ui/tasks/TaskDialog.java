@@ -30,20 +30,30 @@ import java.util.Calendar;
 
 public class TaskDialog extends DialogFragment {
 
+    private static final String ARG_TASK = "arg_task";
+
     private TaskItem existingTask = null;
     private final Calendar selectedCal = Calendar.getInstance();
     private boolean isDateTimeChosen = false;
 
     public static TaskDialog newInstance(@Nullable TaskItem task) {
         TaskDialog dialog = new TaskDialog();
-        dialog.existingTask = task;
+        if (task != null) {
+            Bundle args = new Bundle();
+            args.putSerializable(ARG_TASK, task);
+            dialog.setArguments(args);
+        }
         return dialog;
     }
 
     @NonNull
     @Override
     public Dialog onCreateDialog(@Nullable Bundle savedInstanceState) {
+        if (getArguments() != null && existingTask == null) {
+            existingTask = (TaskItem) getArguments().getSerializable(ARG_TASK);
+        }
         Context context = requireContext();
+        final Context appContext = context.getApplicationContext();
         View view = LayoutInflater.from(context).inflate(R.layout.dialog_task_edit, null);
 
         TextView txtDialogTitle = view.findViewById(R.id.txtDialogTitle);
@@ -155,7 +165,7 @@ public class TaskDialog extends DialogFragment {
             if (recurrenceId == R.id.radioRepeatDaily) recurrence = "DAILY";
             else if (recurrenceId == R.id.radioRepeatWeekly) recurrence = "WEEKLY";
 
-            AppDatabase db = AppDatabase.getInstance(context);
+            AppDatabase db = AppDatabase.getInstance(appContext);
 
             if (existingTask == null) {
                 TaskItem newTask = new TaskItem(title, desc, dueMillis, priority, "Tasks", hasReminder);
@@ -163,10 +173,10 @@ public class TaskDialog extends DialogFragment {
                 AppExecutors.getInstance().diskIO().execute(() -> {
                     long id = db.taskDao().insert(newTask);
                     if (hasReminder && dueMillis > System.currentTimeMillis()) {
-                        NotificationHelper.scheduleAlarm(context, id, title, dueMillis);
+                        NotificationHelper.scheduleAlarm(appContext, id, title, dueMillis);
                     }
                 });
-                Toast.makeText(context, "Task created!", Toast.LENGTH_SHORT).show();
+                Toast.makeText(appContext, "Task created!", Toast.LENGTH_SHORT).show();
             } else {
                 existingTask.setTitle(title);
                 existingTask.setDescription(desc);
@@ -178,15 +188,15 @@ public class TaskDialog extends DialogFragment {
                 AppExecutors.getInstance().diskIO().execute(() -> {
                     db.taskDao().update(existingTask);
                     if (hasReminder && dueMillis > System.currentTimeMillis()) {
-                        NotificationHelper.scheduleAlarm(context, existingTask.getId(), title, dueMillis);
+                        NotificationHelper.scheduleAlarm(appContext, existingTask.getId(), title, dueMillis);
                     } else {
-                        NotificationHelper.cancelAlarm(context, existingTask.getId());
+                        NotificationHelper.cancelAlarm(appContext, existingTask.getId());
                     }
                 });
-                Toast.makeText(context, "Task updated!", Toast.LENGTH_SHORT).show();
+                Toast.makeText(appContext, "Task updated!", Toast.LENGTH_SHORT).show();
             }
 
-            dismiss();
+            dismissAllowingStateLoss();
         });
 
         return dialog;

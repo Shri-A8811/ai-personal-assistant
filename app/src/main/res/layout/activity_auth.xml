@@ -83,7 +83,7 @@
                 <com.google.android.material.tabs.TabLayout
                     android:id="@+id/tabAuthMode"
                     android:layout_width="match_parent"
-                    android:layout_height="40dp"
+                    android:layout_height="48dp"
                     android:layout_marginBottom="18dp"
                     android:background="@drawable/bg_model_pill"
                     app:tabBackground="@drawable/bg_model_pill"
@@ -91,7 +91,7 @@
                     app:tabIndicatorColor="@color/electric_cyan"
                     app:tabIndicatorFullWidth="true"
                     app:tabIndicatorGravity="stretch"
-                    app:tabSelectedTextColor="@color/bg_dark"
+                    app:tabSelectedTextColor="@color/on_electric_cyan"
                     app:tabTextColor="@color/text_secondary">
 
                     <com.google.android.material.tabs.TabItem
@@ -120,7 +120,7 @@
                     app:boxCornerRadiusTopStart="12dp"
                     app:boxStrokeColor="@color/electric_cyan"
                     app:hintTextColor="@color/electric_cyan"
-                    app:startIconDrawable="@drawable/ic_notes"
+                    app:startIconDrawable="@drawable/ic_person"
                     app:startIconTint="@color/text_secondary">
 
                     <com.google.android.material.textfield.TextInputEditText
@@ -130,7 +130,7 @@
                         android:inputType="textPersonName"
                         android:maxLines="1"
                         android:textColor="@color/text_primary"
-                        android:textSize="14sp" />
+                        android:textSize="15sp" />
                 </com.google.android.material.textfield.TextInputLayout>
 
                 <!-- Email Field -->
@@ -148,7 +148,7 @@
                     app:boxCornerRadiusTopStart="12dp"
                     app:boxStrokeColor="@color/electric_cyan"
                     app:hintTextColor="@color/electric_cyan"
-                    app:startIconDrawable="@drawable/ic_chat"
+                    app:startIconDrawable="@drawable/ic_email"
                     app:startIconTint="@color/text_secondary">
 
                     <com.google.android.material.textfield.TextInputEditText
@@ -158,7 +158,7 @@
                         android:inputType="textEmailAddress"
                         android:maxLines="1"
                         android:textColor="@color/text_primary"
-                        android:textSize="14sp" />
+                        android:textSize="15sp" />
                 </com.google.android.material.textfield.TextInputLayout>
 
                 <!-- Password Field -->
@@ -178,7 +178,7 @@
                     app:endIconMode="password_toggle"
                     app:endIconTint="@color/text_secondary"
                     app:hintTextColor="@color/electric_cyan"
-                    app:startIconDrawable="@drawable/ic_pin"
+                    app:startIconDrawable="@drawable/ic_lock"
                     app:startIconTint="@color/text_secondary">
 
                     <com.google.android.material.textfield.TextInputEditText
@@ -188,7 +188,7 @@
                         android:inputType="textPassword"
                         android:maxLines="1"
                         android:textColor="@color/text_primary"
-                        android:textSize="14sp" />
+                        android:textSize="15sp" />
                 </com.google.android.material.textfield.TextInputLayout>
 
                 <!-- Action Button -->
@@ -199,7 +199,7 @@
                     android:layout_height="52dp"
                     android:backgroundTint="@color/electric_cyan"
                     android:text="Create Account"
-                    android:textColor="@color/bg_dark"
+                    android:textColor="@color/on_electric_cyan"
                     android:textSize="15sp"
                     android:textStyle="bold"
                     app:cornerRadius="26dp" />
@@ -209,24 +209,43 @@
                     android:id="@+id/btnGuestMode"
                     style="@style/Widget.Material3.Button.TextButton"
                     android:layout_width="match_parent"
-                    android:layout_height="44dp"
+                    android:layout_height="48dp"
                     android:layout_marginTop="8dp"
-                    android:text="Continue as Guest 👤"
+                    android:text="Continue as Guest"
                     android:textColor="@color/text_secondary"
-                    android:textSize="13sp" />
+                    android:textSize="13sp"
+                    app:icon="@drawable/ic_person"
+                    app:iconGravity="textStart"
+                    app:iconSize="16dp"
+                    app:iconTint="@color/text_secondary" />
 
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
         <!-- Terms / Notice -->
-        <TextView
+        <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="20dp"
-            android:gravity="center"
-            android:text="🔒 Your API keys and personal data stay securely stored on your device."
-            android:textColor="@color/text_muted"
-            android:textSize="11sp" />
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <ImageView
+                android:layout_width="14dp"
+                android:layout_height="14dp"
+                android:layout_marginEnd="6dp"
+                android:importantForAccessibility="no"
+                android:src="@drawable/ic_lock"
+                app:tint="@color/text_muted" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:text="Your API keys and personal data stay securely stored on your device."
+                android:textColor="@color/text_muted"
+                android:textSize="12sp" />
+        </LinearLayout>
 
         <View
             android:layout_width="match_parent"

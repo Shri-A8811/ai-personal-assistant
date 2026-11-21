@@ -11,7 +11,8 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="16dp">
+        android:padding="16dp"
+        android:paddingBottom="24dp">
 
         <!-- Top Personalized Greeting & Status Header -->
         <LinearLayout
@@ -21,19 +22,20 @@
             android:orientation="horizontal">
 
             <FrameLayout
-                android:layout_width="44dp"
-                android:layout_height="44dp">
+                android:layout_width="48dp"
+                android:layout_height="48dp">
 
                 <View
-                    android:layout_width="44dp"
-                    android:layout_height="44dp"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
                     android:background="@drawable/bg_model_pill"
                     android:backgroundTint="@color/electric_cyan_glow" />
 
                 <com.google.android.material.imageview.ShapeableImageView
-                    android:layout_width="38dp"
-                    android:layout_height="38dp"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
                     android:layout_gravity="center"
+                    android:contentDescription="AI Assistant emblem"
                     android:scaleType="centerCrop"
                     android:src="@drawable/app_logo"
                     app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Full"
@@ -54,38 +56,52 @@
                     android:layout_height="wrap_content"
                     android:ellipsize="end"
                     android:maxLines="1"
-                    android:text="Welcome Back 👋"
+                    android:text="Welcome Back"
                     android:textColor="@color/text_primary"
-                    android:textSize="18sp"
+                    android:textSize="20sp"
                     android:textStyle="bold" />
 
-                <TextView
-                    android:id="@+id/txtDashboardSubline"
+                <LinearLayout
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="2dp"
-                    android:text="● AI Engine Online • Ready"
-                    android:textColor="@color/status_active"
-                    android:textSize="12sp"
-                    android:textStyle="bold" />
+                    android:layout_marginTop="3dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <View
+                        android:layout_width="7dp"
+                        android:layout_height="7dp"
+                        android:background="@drawable/bg_send_button"
+                        android:backgroundTint="@color/status_active" />
+
+                    <TextView
+                        android:id="@+id/txtDashboardSubline"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="6dp"
+                        android:text="AI Engine Online • Ready"
+                        android:textColor="@color/status_active"
+                        android:textSize="12sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
             </LinearLayout>
         </LinearLayout>
 
-        <!-- AI Morning Briefing Card (Hero Card) -->
+        <!-- AI Morning Briefing Card (Gradient Hero Card) -->
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/cardBriefing"
-            style="@style/ModernCard"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
-            app:cardBackgroundColor="@color/surface_dark"
-            app:cardCornerRadius="18dp"
-            app:strokeColor="@color/electric_cyan"
-            app:strokeWidth="1dp">
+            app:cardBackgroundColor="@color/transparent"
+            app:cardCornerRadius="20dp"
+            app:cardElevation="0dp"
+            app:strokeWidth="0dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:background="@drawable/bg_hero_card"
                 android:orientation="vertical"
                 android:padding="16dp">
 
@@ -98,6 +114,7 @@
                     <ImageView
                         android:layout_width="22dp"
                         android:layout_height="22dp"
+                        android:importantForAccessibility="no"
                         android:src="@drawable/ic_sparkle"
                         app:tint="@color/electric_cyan" />
 
@@ -113,11 +130,12 @@
 
                     <ImageView
                         android:id="@+id/btnRefreshBriefing"
-                        android:layout_width="32dp"
-                        android:layout_height="32dp"
+                        android:layout_width="44dp"
+                        android:layout_height="44dp"
                         android:background="?attr/selectableItemBackgroundBorderless"
-                        android:padding="6dp"
-                        android:src="@drawable/ic_sparkle"
+                        android:contentDescription="@string/generate_briefing"
+                        android:padding="10dp"
+                        android:src="@drawable/ic_refresh"
                         app:tint="@color/text_secondary" />
                 </LinearLayout>
 
@@ -125,8 +143,8 @@
                     android:id="@+id/txtBriefingContent"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="10dp"
-                    android:lineSpacingExtra="3dp"
+                    android:layout_marginTop="8dp"
+                    android:lineSpacingMultiplier="1.25"
                     android:text="Analyzing your schedule, upcoming deadlines, and tasks..."
                     android:textColor="@color/text_primary"
                     android:textSize="14sp" />
@@ -136,7 +154,7 @@
                     android:layout_width="24dp"
                     android:layout_height="24dp"
                     android:layout_gravity="center_horizontal"
-                    android:layout_marginTop="8dp"
+                    android:layout_marginTop="10dp"
                     android:indeterminateTint="@color/electric_cyan"
                     android:visibility="gone" />
 
@@ -144,8 +162,8 @@
                 <LinearLayout
                     android:id="@+id/btnPlayAudioBriefing"
                     android:layout_width="match_parent"
-                    android:layout_height="40dp"
-                    android:layout_marginTop="12dp"
+                    android:layout_height="44dp"
+                    android:layout_marginTop="14dp"
                     android:background="@drawable/bg_model_pill"
                     android:backgroundTint="@color/surface_container_high"
                     android:clickable="true"
@@ -159,6 +177,7 @@
                         android:id="@+id/imgAudioBriefingIcon"
                         android:layout_width="18dp"
                         android:layout_height="18dp"
+                        android:importantForAccessibility="no"
                         android:src="@drawable/ic_speaker"
                         app:tint="@color/electric_cyan" />
 
@@ -166,23 +185,23 @@
                         android:id="@+id/txtAudioBriefingLabel"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:layout_marginStart="8dp"
+                        android:layout_marginStart="10dp"
                         android:layout_weight="1"
                         android:text="Listen to Audio Briefing"
                         android:textColor="@color/text_primary"
-                        android:textSize="12sp"
+                        android:textSize="13sp"
                         android:textStyle="bold" />
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:background="@drawable/bg_model_pill"
-                        android:backgroundTint="@color/electric_cyan_glow"
-                        android:paddingHorizontal="8dp"
-                        android:paddingVertical="2dp"
-                        android:text="Audio 🔊"
+                        android:backgroundTint="@color/tint_cyan_bg"
+                        android:paddingHorizontal="10dp"
+                        android:paddingVertical="3dp"
+                        android:text="Play"
                         android:textColor="@color/electric_cyan"
-                        android:textSize="10sp"
+                        android:textSize="11sp"
                         android:textStyle="bold" />
                 </LinearLayout>
 
@@ -194,16 +213,16 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="20dp"
-            android:text="Activity &amp; Productivity Stats"
-            android:textColor="@color/text_muted"
+            android:text="Activity &amp; Productivity Overview"
+            android:textColor="@color/text_secondary"
             android:textSize="13sp"
             android:textStyle="bold" />
 
-        <!-- 4 Quick Metric Cards in 2x2 / 4-card Row -->
+        <!-- 2x2 Bento Grid Row 1: Completed + Pending -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
+            android:layout_marginTop="10dp"
             android:orientation="horizontal">
 
             <!-- Completed Tasks Metric -->
@@ -211,7 +230,7 @@
                 style="@style/ModernCard"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginEnd="4dp"
+                android:layout_marginEnd="6dp"
                 android:layout_weight="1"
                 app:cardBackgroundColor="@color/surface_dark"
                 app:strokeColor="@color/card_stroke_dark">
@@ -219,25 +238,48 @@
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="12dp">
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:padding="14dp">
 
-                    <TextView
-                        android:id="@+id/txtMetricCompleted"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="0"
-                        android:textColor="@color/priority_low"
-                        android:textSize="22sp"
-                        android:textStyle="bold" />
+                    <FrameLayout
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        android:background="@drawable/bg_drawer_item_normal"
+                        android:backgroundTint="@color/tint_green_bg">
 
-                    <TextView
-                        android:layout_width="wrap_content"
+                        <ImageView
+                            android:layout_width="18dp"
+                            android:layout_height="18dp"
+                            android:layout_gravity="center"
+                            android:importantForAccessibility="no"
+                            android:src="@drawable/ic_check"
+                            app:tint="@color/priority_low" />
+                    </FrameLayout>
+
+                    <LinearLayout
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="2dp"
-                        android:text="Completed"
-                        android:textColor="@color/text_muted"
-                        android:textSize="11sp" />
+                        android:layout_marginStart="12dp"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:id="@+id/txtMetricCompleted"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="0"
+                            android:textColor="@color/priority_low"
+                            android:textSize="22sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Completed"
+                            android:textColor="@color/text_secondary"
+                            android:textSize="12sp" />
+                    </LinearLayout>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
@@ -246,7 +288,7 @@
                 style="@style/ModernCard"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginHorizontal="3dp"
+                android:layout_marginStart="6dp"
                 android:layout_weight="1"
                 app:cardBackgroundColor="@color/surface_dark"
                 app:strokeColor="@color/card_stroke_dark">
@@ -254,34 +296,65 @@
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="12dp">
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:padding="14dp">
 
-                    <TextView
-                        android:id="@+id/txtMetricPending"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="0"
-                        android:textColor="@color/priority_medium"
-                        android:textSize="22sp"
-                        android:textStyle="bold" />
+                    <FrameLayout
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        android:background="@drawable/bg_drawer_item_normal"
+                        android:backgroundTint="@color/tint_amber_bg">
 
-                    <TextView
-                        android:layout_width="wrap_content"
+                        <ImageView
+                            android:layout_width="18dp"
+                            android:layout_height="18dp"
+                            android:layout_gravity="center"
+                            android:importantForAccessibility="no"
+                            android:src="@drawable/ic_time"
+                            app:tint="@color/priority_medium" />
+                    </FrameLayout>
+
+                    <LinearLayout
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="2dp"
-                        android:text="Pending"
-                        android:textColor="@color/text_muted"
-                        android:textSize="11sp" />
+                        android:layout_marginStart="12dp"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:id="@+id/txtMetricPending"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="0"
+                            android:textColor="@color/priority_medium"
+                            android:textSize="22sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Pending"
+                            android:textColor="@color/text_secondary"
+                            android:textSize="12sp" />
+                    </LinearLayout>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
+        </LinearLayout>
+
+        <!-- 2x2 Bento Grid Row 2: Notes + Models -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:orientation="horizontal">
 
             <!-- Total Notes Metric -->
             <com.google.android.material.card.MaterialCardView
                 style="@style/ModernCard"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginHorizontal="3dp"
+                android:layout_marginEnd="6dp"
                 android:layout_weight="1"
                 app:cardBackgroundColor="@color/surface_dark"
                 app:strokeColor="@color/card_stroke_dark">
@@ -289,25 +362,48 @@
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="12dp">
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:padding="14dp">
 
-                    <TextView
-                        android:id="@+id/txtMetricNotes"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="0"
-                        android:textColor="@color/electric_cyan"
-                        android:textSize="22sp"
-                        android:textStyle="bold" />
+                    <FrameLayout
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        android:background="@drawable/bg_drawer_item_normal"
+                        android:backgroundTint="@color/tint_cyan_bg">
 
-                    <TextView
-                        android:layout_width="wrap_content"
+                        <ImageView
+                            android:layout_width="18dp"
+                            android:layout_height="18dp"
+                            android:layout_gravity="center"
+                            android:importantForAccessibility="no"
+                            android:src="@drawable/ic_notes"
+                            app:tint="@color/electric_cyan" />
+                    </FrameLayout>
+
+                    <LinearLayout
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="2dp"
-                        android:text="Notes"
-                        android:textColor="@color/text_muted"
-                        android:textSize="11sp" />
+                        android:layout_marginStart="12dp"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:id="@+id/txtMetricNotes"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="0"
+                            android:textColor="@color/electric_cyan"
+                            android:textSize="22sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Saved Notes"
+                            android:textColor="@color/text_secondary"
+                            android:textSize="12sp" />
+                    </LinearLayout>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
@@ -316,7 +412,7 @@
                 style="@style/ModernCard"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="4dp"
+                android:layout_marginStart="6dp"
                 android:layout_weight="1"
                 app:cardBackgroundColor="@color/surface_dark"
                 app:strokeColor="@color/card_stroke_dark">
@@ -324,28 +420,50 @@
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="12dp">
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:padding="14dp">
 
-                    <TextView
-                        android:id="@+id/txtMetricModels"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="0"
-                        android:textColor="@color/bioluminescent_indigo"
-                        android:textSize="22sp"
-                        android:textStyle="bold" />
+                    <FrameLayout
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        android:background="@drawable/bg_drawer_item_normal"
+                        android:backgroundTint="@color/tint_indigo_bg">
 
-                    <TextView
-                        android:layout_width="wrap_content"
+                        <ImageView
+                            android:layout_width="18dp"
+                            android:layout_height="18dp"
+                            android:layout_gravity="center"
+                            android:importantForAccessibility="no"
+                            android:src="@drawable/ic_bolt"
+                            app:tint="@color/cyber_violet" />
+                    </FrameLayout>
+
+                    <LinearLayout
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="2dp"
-                        android:text="Models"
-                        android:textColor="@color/text_muted"
-                        android:textSize="11sp" />
+                        android:layout_marginStart="12dp"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:id="@+id/txtMetricModels"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="0"
+                            android:textColor="@color/cyber_violet"
+                            android:textSize="22sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Pinned Models"
+                            android:textColor="@color/text_secondary"
+                            android:textSize="12sp" />
+                    </LinearLayout>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
-
         </LinearLayout>
 
         <!-- Tasks Due Today Title -->
@@ -362,7 +480,7 @@
             android:id="@+id/recyclerDashboardTasks"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
+            android:layout_marginTop="10dp"
             android:nestedScrollingEnabled="false"
             tools:listitem="@layout/item_task" />
 
@@ -372,8 +490,8 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
             android:gravity="center"
-            android:text="No tasks scheduled for today! Enjoy your day or create one."
-            android:textColor="@color/text_muted"
+            android:text="No tasks scheduled for today. Enjoy your day or add one."
+            android:textColor="@color/text_secondary"
             android:textSize="13sp"
             android:visibility="gone" />
 

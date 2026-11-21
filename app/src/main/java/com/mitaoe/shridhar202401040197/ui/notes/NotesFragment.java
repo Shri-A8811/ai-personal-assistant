@@ -1,5 +1,7 @@
 package com.mitaoe.shridhar202401040197.ui.notes;
 
+import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.text.Editable;
@@ -8,6 +10,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -37,6 +40,7 @@ public class NotesFragment extends Fragment {
     private NoteAdapter adapter;
     private TextView txtEmptyNotes;
     private EditText editSearchNotes;
+    private ImageView btnClearNoteSearch;
     private AppDatabase db;
     private AiService aiService;
     private LiveData<List<NoteItem>> currentLiveData;
@@ -52,25 +56,31 @@ public class NotesFragment extends Fragment {
         recyclerNotes = view.findViewById(R.id.recyclerNotes);
         txtEmptyNotes = view.findViewById(R.id.txtEmptyNotes);
         editSearchNotes = view.findViewById(R.id.editSearchNotes);
+        btnClearNoteSearch = view.findViewById(R.id.btnClearNoteSearch);
         ExtendedFloatingActionButton fabAddNote = view.findViewById(R.id.fabAddNote);
 
         recyclerNotes.setLayoutManager(new LinearLayoutManager(requireContext()));
         adapter = new NoteAdapter(new NoteAdapter.NoteActionListener() {
             @Override
             public void onNoteClick(NoteItem note) {
-                Intent intent = new Intent(requireContext(), NoteEditActivity.class);
+                Context ctx = getContext();
+                if (ctx == null) return;
+                Intent intent = new Intent(ctx, NoteEditActivity.class);
                 intent.putExtra(NoteEditActivity.EXTRA_NOTE, note);
                 startActivity(intent);
             }
 
             @Override
             public void onNoteDelete(NoteItem note) {
-                new AlertDialog.Builder(requireContext())
+                Context ctx = getContext();
+                if (ctx == null) return;
+                final Context appContext = ctx.getApplicationContext();
+                new AlertDialog.Builder(ctx)
                         .setTitle("Delete Note")
                         .setMessage("Delete \"" + (note.getTitle() != null ? note.getTitle() : "Untitled") + "\"?")
                         .setPositiveButton("Delete", (dialog, which) -> {
                             AppExecutors.getInstance().diskIO().execute(() -> db.noteDao().delete(note));
-                            Toast.makeText(requireContext(), "Note deleted", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(appContext, "Note deleted", Toast.LENGTH_SHORT).show();
                         })
                         .setNegativeButton("Cancel", null)
                         .show();
@@ -78,6 +88,10 @@ public class NotesFragment extends Fragment {
 
             @Override
             public void onAiSummarizeClick(NoteItem note) {
+                Context ctx = getContext();
+                if (ctx == null) return;
+                final Context appContext = ctx.getApplicationContext();
+                Toast.makeText(appContext, "Summarizing note...", Toast.LENGTH_SHORT).show();
                 String prompt = "Summarize this note in 2-3 bullet points:\n\n" + note.getContent();
                 aiService.generateResponse(new ArrayList<>(), prompt, new AiService.StreamCallback() {
                     @Override public void onStart() {}
@@ -85,8 +99,10 @@ public class NotesFragment extends Fragment {
 
                     @Override
                     public void onComplete(String fullResponse) {
-                        new AlertDialog.Builder(requireContext())
-                                .setTitle("✨ Summary: " + note.getTitle())
+                        Activity act = getActivity();
+                        if (!isAdded() || act == null || act.isFinishing() || act.isDestroyed()) return;
+                        new AlertDialog.Builder(act)
+                                .setTitle("Summary: " + (note.getTitle() != null ? note.getTitle() : "Note"))
                                 .setMessage(fullResponse)
                                 .setPositiveButton("Close", null)
                                 .show();
@@ -94,13 +110,19 @@ public class NotesFragment extends Fragment {
 
                     @Override
                     public void onError(String errorMessage) {
-                        Toast.makeText(requireContext(), "AI Error: " + errorMessage, Toast.LENGTH_SHORT).show();
+                        Activity act = getActivity();
+                        if (!isAdded() || act == null || act.isFinishing() || act.isDestroyed()) return;
+                        Toast.makeText(appContext, "AI Error: " + errorMessage, Toast.LENGTH_SHORT).show();
                     }
                 });
             }
 
             @Override
             public void onAiExtractTasksClick(NoteItem note) {
+                Context ctx = getContext();
+                if (ctx == null) return;
+                final Context appContext = ctx.getApplicationContext();
+                Toast.makeText(appContext, "Extracting tasks...", Toast.LENGTH_SHORT).show();
                 String prompt = "Extract actionable tasks from this note (one per line):\n\n" + note.getContent();
                 aiService.generateResponse(new ArrayList<>(), prompt, new AiService.StreamCallback() {
                     @Override public void onStart() {}
@@ -118,12 +140,16 @@ public class NotesFragment extends Fragment {
                                 count++;
                             }
                         }
-                        Toast.makeText(requireContext(), "Extracted " + count + " tasks to your Tasks tab! ✅", Toast.LENGTH_SHORT).show();
+                        Activity act = getActivity();
+                        if (!isAdded() || act == null || act.isFinishing() || act.isDestroyed()) return;
+                        Toast.makeText(appContext, "Extracted " + count + " tasks to your Tasks tab", Toast.LENGTH_SHORT).show();
                     }
 
                     @Override
                     public void onError(String errorMessage) {
-                        Toast.makeText(requireContext(), "AI Error: " + errorMessage, Toast.LENGTH_SHORT).show();
+                        Activity act = getActivity();
+                        if (!isAdded() || act == null || act.isFinishing() || act.isDestroyed()) return;
+                        Toast.makeText(appContext, "AI Error: " + errorMessage, Toast.LENGTH_SHORT).show();
                     }
                 });
             }
@@ -131,38 +157,76 @@ public class NotesFragment extends Fragment {
         recyclerNotes.setAdapter(adapter);
 
         fabAddNote.setOnClickListener(v -> {
-            Intent intent = new Intent(requireContext(), NoteEditActivity.class);
-            startActivity(intent);
-        });
-
-        editSearchNotes.addTextChangedListener(new TextWatcher() {
-            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
-                String query = s.toString().trim();
-                if (query.isEmpty()) {
-                    observeNotes(db.noteDao().getAllNotes());
-                } else {
-                    observeNotes(db.noteDao().searchNotes(query));
-                }
+            Context ctx = getContext();
+            if (ctx != null) {
+                Intent intent = new Intent(ctx, NoteEditActivity.class);
+                startActivity(intent);
             }
-            @Override public void afterTextChanged(Editable s) {}
         });
-
-        observeNotes(db.noteDao().getAllNotes());
 
         return view;
     }
 
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+
+        if (btnClearNoteSearch != null) {
+            btnClearNoteSearch.setOnClickListener(v -> {
+                if (editSearchNotes != null) editSearchNotes.setText("");
+            });
+        }
+
+        if (editSearchNotes != null) {
+            editSearchNotes.addTextChangedListener(new TextWatcher() {
+                @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+                @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
+                    String query = s != null ? s.toString().trim() : "";
+                    if (btnClearNoteSearch != null) {
+                        btnClearNoteSearch.setVisibility(query.isEmpty() ? View.GONE : View.VISIBLE);
+                    }
+                    if (query.isEmpty()) {
+                        observeNotes(db.noteDao().getAllNotes());
+                    } else {
+                        observeNotes(db.noteDao().searchNotes(query));
+                    }
+                }
+                @Override public void afterTextChanged(Editable s) {}
+            });
+        }
+
+        observeNotes(db.noteDao().getAllNotes());
+    }
+
     private void observeNotes(LiveData<List<NoteItem>> liveData) {
+        if (!isAdded() || getView() == null) return;
         if (currentLiveData != null) {
-            currentLiveData.removeObservers(getViewLifecycleOwner());
+            try {
+                currentLiveData.removeObservers(getViewLifecycleOwner());
+            } catch (Exception ignored) {}
         }
         currentLiveData = liveData;
-        currentLiveData.observe(getViewLifecycleOwner(), notes -> {
-            if (notes != null) {
-                adapter.setNotes(notes);
-                txtEmptyNotes.setVisibility(notes.isEmpty() ? View.VISIBLE : View.GONE);
-            }
-        });
+        try {
+            currentLiveData.observe(getViewLifecycleOwner(), notes -> {
+                if (!isAdded() || getView() == null) return;
+                if (notes != null) {
+                    if (adapter != null) adapter.setNotes(notes);
+                    if (txtEmptyNotes != null) {
+                        txtEmptyNotes.setVisibility(notes.isEmpty() ? View.VISIBLE : View.GONE);
+                    }
+                }
+            });
+        } catch (Exception ignored) {}
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        if (currentLiveData != null) {
+            try {
+                currentLiveData.removeObservers(getViewLifecycleOwner());
+            } catch (Exception ignored) {}
+            currentLiveData = null;
+        }
     }
 }

@@ -1,5 +1,6 @@
 package com.mitaoe.shridhar202401040197.data.model;
 
+import androidx.room.ColumnInfo;
 import androidx.room.Entity;
 import androidx.room.PrimaryKey;
 
@@ -16,6 +17,7 @@ public class NoteItem implements Serializable {
     private long updatedAtMillis;
     private String category;
     private String colorHex;
+    @ColumnInfo(defaultValue = "0")
     private boolean isPinned;
 
     public NoteItem(String title, String content, long updatedAtMillis, String category, String colorHex) {

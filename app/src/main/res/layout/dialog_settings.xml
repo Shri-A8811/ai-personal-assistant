@@ -52,12 +52,13 @@
 
             <ImageView
                 android:id="@+id/btnCloseSettings"
-                android:layout_width="32dp"
-                android:layout_height="32dp"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
                 android:background="?attr/selectableItemBackgroundBorderless"
-                android:padding="6dp"
-                android:src="@drawable/ic_delete"
-                app:tint="@color/text_muted" />
+                android:contentDescription="Close settings"
+                android:padding="10dp"
+                android:src="@drawable/ic_close"
+                app:tint="@color/text_secondary" />
         </LinearLayout>
 
         <!-- Quick Access Banner: Model Library -->
@@ -78,6 +79,14 @@
                 android:orientation="horizontal"
                 android:padding="14dp">
 
+                <ImageView
+                    android:layout_width="22dp"
+                    android:layout_height="22dp"
+                    android:layout_marginEnd="12dp"
+                    android:importantForAccessibility="no"
+                    android:src="@drawable/ic_search"
+                    app:tint="@color/accent_gemini_blue" />
+
                 <LinearLayout
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
@@ -87,7 +96,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="🔍 Model Library &amp; Search"
+                        android:text="Model Library &amp; Search"
                         android:textColor="@color/accent_gemini_blue"
                         android:textSize="14sp"
                         android:textStyle="bold" />
@@ -106,12 +115,12 @@
                     android:id="@+id/btnOpenLibraryTop"
                     style="@style/Widget.Material3.Button.TonalButton"
                     android:layout_width="wrap_content"
-                    android:layout_height="36dp"
+                    android:layout_height="40dp"
                     android:insetTop="0dp"
                     android:insetBottom="0dp"
-                    android:text="Browse Models"
+                    android:text="Browse"
                     android:textColor="@color/text_primary"
-                    android:textSize="11sp" />
+                    android:textSize="12sp" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
@@ -175,7 +184,8 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:text="Chat with Notes 📚 (Include saved notes in context)"
+            android:minHeight="48dp"
+            android:text="Chat with Notes (Include saved notes in context)"
             android:textColor="@color/text_primary" />
 
         <!-- Data & Backup Section -->
@@ -198,9 +208,9 @@
                 android:id="@+id/btnExportBackup"
                 style="@style/Widget.Material3.Button.TonalButton"
                 android:layout_width="0dp"
-                android:layout_height="40dp"
-                android:layout_weight="1"
+                android:layout_height="44dp"
                 android:layout_marginEnd="6dp"
+                android:layout_weight="1"
                 android:text="Export JSON"
                 android:textSize="12sp" />
 
@@ -208,9 +218,9 @@
                 android:id="@+id/btnImportBackup"
                 style="@style/Widget.Material3.Button.TonalButton"
                 android:layout_width="0dp"
-                android:layout_height="40dp"
-                android:layout_weight="1"
+                android:layout_height="44dp"
                 android:layout_marginStart="6dp"
+                android:layout_weight="1"
                 android:text="Import JSON"
                 android:textSize="12sp" />
         </LinearLayout>
@@ -219,14 +229,14 @@
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnDoneSettings"
             android:layout_width="match_parent"
-            android:layout_height="44dp"
+            android:layout_height="48dp"
             android:layout_marginTop="20dp"
             android:backgroundTint="@color/accent_gemini_blue"
             android:text="Done"
-            android:textColor="@color/white"
-            android:textSize="13sp"
+            android:textColor="@color/on_electric_cyan"
+            android:textSize="14sp"
             android:textStyle="bold"
-            app:cornerRadius="22dp" />
+            app:cornerRadius="24dp" />
 
     </LinearLayout>
 

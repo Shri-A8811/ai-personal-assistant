@@ -1,46 +1,44 @@
 package com.mitaoe.shridhar202401040197.util;
 
-import java.text.SimpleDateFormat;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Calendar;
-import java.util.Date;
 import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class DateTimeUtil {
 
-    private static final SimpleDateFormat TIME_FORMAT = new SimpleDateFormat("hh:mm a", Locale.getDefault());
-    private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("MMM dd, yyyy", Locale.getDefault());
-    private static final SimpleDateFormat DATE_TIME_FORMAT = new SimpleDateFormat("MMM dd, hh:mm a", Locale.getDefault());
+    private static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("hh:mm a", Locale.getDefault());
+    private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("MMM dd, yyyy", Locale.getDefault());
+    private static final DateTimeFormatter DATE_TIME_FORMAT = DateTimeFormatter.ofPattern("MMM dd, hh:mm a", Locale.getDefault());
 
     public static String formatTime(long millis) {
         if (millis <= 0) return "";
-        return TIME_FORMAT.format(new Date(millis));
+        return Instant.ofEpochMilli(millis).atZone(ZoneId.systemDefault()).format(TIME_FORMAT);
     }
 
     public static String formatDate(long millis) {
         if (millis <= 0) return "";
-        return DATE_FORMAT.format(new Date(millis));
+        return Instant.ofEpochMilli(millis).atZone(ZoneId.systemDefault()).format(DATE_FORMAT);
     }
 
     public static String formatDateTime(long millis) {
         if (millis <= 0) return "";
-        Calendar now = Calendar.getInstance();
-        Calendar target = Calendar.getInstance();
-        target.setTimeInMillis(millis);
+        ZonedDateTime target = Instant.ofEpochMilli(millis).atZone(ZoneId.systemDefault());
+        ZonedDateTime now = ZonedDateTime.now(ZoneId.systemDefault());
 
-        if (now.get(Calendar.YEAR) == target.get(Calendar.YEAR) &&
-            now.get(Calendar.DAY_OF_YEAR) == target.get(Calendar.DAY_OF_YEAR)) {
-            return "Today at " + TIME_FORMAT.format(new Date(millis));
+        if (target.toLocalDate().isEqual(now.toLocalDate())) {
+            return "Today at " + target.format(TIME_FORMAT);
         }
 
-        now.add(Calendar.DAY_OF_YEAR, 1);
-        if (now.get(Calendar.YEAR) == target.get(Calendar.YEAR) &&
-            now.get(Calendar.DAY_OF_YEAR) == target.get(Calendar.DAY_OF_YEAR)) {
-            return "Tomorrow at " + TIME_FORMAT.format(new Date(millis));
+        if (target.toLocalDate().isEqual(now.toLocalDate().plusDays(1))) {
+            return "Tomorrow at " + target.format(TIME_FORMAT);
         }
 
-        return DATE_TIME_FORMAT.format(new Date(millis));
+        return target.format(DATE_TIME_FORMAT);
     }
 
     public static long getEndOfTodayMillis() {
@@ -110,10 +108,14 @@ public class DateTimeUtil {
         }
 
         // 4. Month date matching: "on 15 oct", "15 october", "oct 15"
-        String[] months = {"jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"};
-        for (int m = 0; m < months.length; m++) {
+        // Use exact month prefixes to avoid matching non-month words like "marketing" or "decorations"
+        String[] monthNames = {
+            "jan(?:uary)?", "feb(?:ruary)?", "mar(?:ch)?", "apr(?:il)?", "may", "jun(?:e)?",
+            "jul(?:y)?", "aug(?:ust)?", "sep(?:tember)?", "oct(?:ober)?", "nov(?:ember)?", "dec(?:ember)?"
+        };
+        for (int m = 0; m < monthNames.length; m++) {
             // "15 oct" or "15th october"
-            Pattern mPattern1 = Pattern.compile("\\b(\\d{1,2})(?:st|nd|rd|th)?\\s+" + months[m] + "[a-z]*\\b");
+            Pattern mPattern1 = Pattern.compile("\\b(\\d{1,2})(?:st|nd|rd|th)?\\s+(" + monthNames[m] + ")\\b");
             Matcher mMatch1 = mPattern1.matcher(lower);
             if (mMatch1.find()) {
                 try {
@@ -129,11 +131,11 @@ public class DateTimeUtil {
             }
 
             // "oct 15" or "october 15th"
-            Pattern mPattern2 = Pattern.compile("\\b" + months[m] + "[a-z]*\\s+(\\d{1,2})(?:st|nd|rd|th)?\\b");
+            Pattern mPattern2 = Pattern.compile("\\b(" + monthNames[m] + ")\\s+(\\d{1,2})(?:st|nd|rd|th)?\\b");
             Matcher mMatch2 = mPattern2.matcher(lower);
             if (mMatch2.find()) {
                 try {
-                    int day = Integer.parseInt(mMatch2.group(1));
+                    int day = Integer.parseInt(mMatch2.group(2));
                     cal.set(Calendar.MONTH, m);
                     cal.set(Calendar.DAY_OF_MONTH, day);
                     if (cal.before(now)) {
@@ -180,6 +182,9 @@ public class DateTimeUtil {
                         if (suffix != null) {
                             if (suffix.equalsIgnoreCase("pm") && hour < 12) hour += 12;
                             if (suffix.equalsIgnoreCase("am") && hour == 12) hour = 0;
+                        } else if ((lower.contains("tonight") || lower.contains("evening") || lower.contains("night")) && hour < 12) {
+                            // "tonight at 9" -> 9 PM (21)
+                            hour += 12;
                         } else if (hour < 8 && !lower.contains("morning") && !hasColon) {
                             hour += 12;
                         }
@@ -193,6 +198,10 @@ public class DateTimeUtil {
             cal.set(Calendar.MINUTE, minute);
             cal.set(Calendar.SECOND, 0);
             cal.set(Calendar.MILLISECOND, 0);
+            // If user said e.g. "at 9am" and that time has already passed today, advance to tomorrow!
+            if (!dateSet && cal.before(now)) {
+                cal.add(Calendar.DAY_OF_YEAR, 1);
+            }
             return cal.getTimeInMillis();
         }
 
@@ -201,6 +210,9 @@ public class DateTimeUtil {
             cal.set(Calendar.MINUTE, 0);
             cal.set(Calendar.SECOND, 0);
             cal.set(Calendar.MILLISECOND, 0);
+            if (cal.before(now)) {
+                cal.add(Calendar.DAY_OF_YEAR, 1);
+            }
             return cal.getTimeInMillis();
         }
 

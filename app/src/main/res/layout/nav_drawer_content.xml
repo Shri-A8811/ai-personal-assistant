@@ -26,11 +26,12 @@
 
         <ImageView
             android:id="@+id/btnCloseDrawer"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
             android:background="?attr/selectableItemBackgroundBorderless"
-            android:padding="6dp"
-            android:src="@drawable/ic_delete"
+            android:contentDescription="Close menu"
+            android:padding="10dp"
+            android:src="@drawable/ic_close"
             app:tint="@color/text_secondary" />
     </LinearLayout>
 
@@ -131,11 +132,14 @@
         android:layout_height="48dp"
         android:layout_marginTop="16dp"
         android:backgroundTint="@color/surface_container_high"
-        android:text="➕   New Chat"
+        android:text="New Chat"
         android:textColor="@color/electric_cyan"
         android:textSize="14sp"
         android:textStyle="bold"
         app:cornerRadius="24dp"
+        app:icon="@drawable/ic_add"
+        app:iconGravity="textStart"
+        app:iconTint="@color/electric_cyan"
         app:strokeColor="@color/electric_cyan"
         app:strokeWidth="1dp" />
 
@@ -184,12 +188,14 @@
         android:layout_height="wrap_content"
         android:background="?attr/selectableItemBackground"
         android:gravity="center_vertical"
+        android:minHeight="48dp"
         android:orientation="horizontal"
         android:paddingVertical="8dp">
 
         <ImageView
             android:layout_width="20dp"
             android:layout_height="20dp"
+            android:importantForAccessibility="no"
             android:src="@drawable/ic_bolt"
             app:tint="@color/electric_cyan" />
 
@@ -207,9 +213,9 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:background="@drawable/bg_model_pill"
-            android:backgroundTint="@color/electric_cyan_glow"
+            android:backgroundTint="@color/tint_cyan_bg"
             android:paddingHorizontal="8dp"
-            android:paddingVertical="2dp"
+            android:paddingVertical="3dp"
             android:text="Models"
             android:textColor="@color/electric_cyan"
             android:textSize="11sp"
@@ -223,12 +229,14 @@
         android:layout_height="wrap_content"
         android:background="?attr/selectableItemBackground"
         android:gravity="center_vertical"
+        android:minHeight="48dp"
         android:orientation="horizontal"
         android:paddingVertical="8dp">
 
         <ImageView
             android:layout_width="20dp"
             android:layout_height="20dp"
+            android:importantForAccessibility="no"
             android:src="@drawable/ic_settings"
             app:tint="@color/text_secondary" />
 
@@ -248,13 +256,15 @@
         android:layout_height="wrap_content"
         android:background="?attr/selectableItemBackground"
         android:gravity="center_vertical"
+        android:minHeight="48dp"
         android:orientation="horizontal"
         android:paddingVertical="8dp">
 
         <ImageView
             android:layout_width="20dp"
             android:layout_height="20dp"
-            android:src="@drawable/ic_delete"
+            android:importantForAccessibility="no"
+            android:src="@drawable/ic_logout"
             app:tint="@color/priority_high" />
 
         <TextView

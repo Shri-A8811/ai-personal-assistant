@@ -32,23 +32,18 @@ public class NotificationActionReceiver extends BroadcastReceiver {
         }
 
         if (ACTION_COMPLETE.equals(action)) {
+            PendingResult pendingResult = goAsync();
             AppExecutors.getInstance().diskIO().execute(() -> {
-                AppDatabase db = AppDatabase.getInstance(context);
-                TaskItem task = db.taskDao().getTaskById(taskId);
-                if (task != null && task.getRecurrence() != null && !task.getRecurrence().equalsIgnoreCase("NONE")) {
-                    long nextTrigger = task.getDueDateMillis();
-                    long interval = "DAILY".equalsIgnoreCase(task.getRecurrence()) ? (24L * 60 * 60 * 1000) : (7L * 24 * 60 * 60 * 1000);
-                    while (nextTrigger <= System.currentTimeMillis()) {
-                        nextTrigger += interval;
+                try {
+                    AppDatabase db = AppDatabase.getInstance(context);
+                    TaskItem task = db.taskDao().getTaskById(taskId);
+                    if (task != null) {
+                        com.mitaoe.shridhar202401040197.util.TaskUtil.toggleTaskCompletion(context, task, true);
+                    } else {
+                        db.taskDao().setTaskCompleted(taskId, true);
                     }
-                    task.setDueDateMillis(nextTrigger);
-                    task.setCompleted(false);
-                    db.taskDao().update(task);
-                    if (task.isHasReminder()) {
-                        NotificationHelper.scheduleAlarm(context, task.getId(), task.getTitle(), nextTrigger);
-                    }
-                } else {
-                    db.taskDao().setTaskCompleted(taskId, true);
+                } finally {
+                    pendingResult.finish();
                 }
             });
             Toast.makeText(context, "Task completed! 🎉", Toast.LENGTH_SHORT).show();

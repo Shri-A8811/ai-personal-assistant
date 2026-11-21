@@ -90,13 +90,14 @@
 
         <ImageView
             android:id="@+id/btnLibClearSearch"
-            android:layout_width="24dp"
-            android:layout_height="24dp"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
             android:background="?attr/selectableItemBackgroundBorderless"
-            android:padding="4dp"
-            android:src="@drawable/ic_delete"
+            android:contentDescription="Clear search query"
+            android:padding="10dp"
+            android:src="@drawable/ic_close"
             android:visibility="gone"
-            app:tint="@color/text_muted" />
+            app:tint="@color/text_secondary" />
     </LinearLayout>
 
     <!-- Horizontal Filter Chips -->
@@ -129,7 +130,7 @@
                 style="@style/Widget.Material3.Chip.Filter"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="⭐ Free Tier Only"
+                android:text="Free Tier Only"
                 android:textColor="@color/text_primary"
                 app:chipBackgroundColor="@color/chip_bg" />
 
@@ -138,7 +139,7 @@
                 style="@style/Widget.Material3.Chip.Filter"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="📌 Pinned Only"
+                android:text="Pinned Only"
                 android:textColor="@color/text_primary"
                 app:chipBackgroundColor="@color/chip_bg" />
 
@@ -287,11 +288,13 @@
             android:id="@+id/btnLibGoToSettings"
             style="@style/Widget.Material3.Button.TonalButton"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+            android:layout_height="44dp"
             android:layout_marginTop="16dp"
             android:backgroundTint="@color/surface_elevated_dark"
-            android:text="⚙️ Open Provider Settings"
+            android:text="Open Provider Settings"
             android:textColor="@color/text_primary"
+            app:icon="@drawable/ic_settings"
+            app:iconTint="@color/text_primary"
             app:strokeColor="@color/card_stroke_dark"
             app:strokeWidth="1dp" />
     </LinearLayout>
@@ -308,41 +311,44 @@
         <EditText
             android:id="@+id/editQuickModelId"
             android:layout_width="0dp"
-            android:layout_height="40dp"
+            android:layout_height="44dp"
             android:layout_weight="1"
             android:background="@drawable/bg_input_box"
-            android:hint="Type model ID (e.g. meta-llama/llama-3.3-70b-instruct:free)..."
-            android:paddingHorizontal="12dp"
+            android:hint="Model ID (e.g. llama-3.3-70b:free)..."
+            android:paddingHorizontal="14dp"
             android:textColor="@color/text_primary"
             android:textColorHint="@color/text_muted"
-            android:textSize="11sp" />
+            android:textSize="13sp" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnQuickPinModel"
             android:layout_width="wrap_content"
-            android:layout_height="38dp"
+            android:layout_height="44dp"
             android:layout_marginStart="8dp"
+            android:backgroundTint="@color/accent_gemini_blue"
             android:insetTop="0dp"
             android:insetBottom="0dp"
-            android:backgroundTint="@color/accent_gemini_blue"
-            android:text="+ Pin"
-            android:textColor="@color/white"
+            android:text="Pin"
+            android:textColor="@color/on_electric_cyan"
+            android:textSize="12sp"
             android:textStyle="bold"
-            android:textSize="11sp"
-            app:cornerRadius="19dp" />
+            app:cornerRadius="22dp"
+            app:icon="@drawable/ic_add"
+            app:iconSize="16dp"
+            app:iconTint="@color/on_electric_cyan" />
     </LinearLayout>
 
     <!-- Bottom Done Button -->
     <com.google.android.material.button.MaterialButton
         android:id="@+id/btnLibDone"
         android:layout_width="match_parent"
-        android:layout_height="44dp"
+        android:layout_height="48dp"
         android:layout_marginTop="10dp"
         android:backgroundTint="@color/accent_gemini_blue"
         android:text="Done"
-        android:textColor="@color/white"
-        android:textSize="13sp"
+        android:textColor="@color/on_electric_cyan"
+        android:textSize="14sp"
         android:textStyle="bold"
-        app:cornerRadius="22dp" />
+        app:cornerRadius="24dp" />
 
 </LinearLayout>

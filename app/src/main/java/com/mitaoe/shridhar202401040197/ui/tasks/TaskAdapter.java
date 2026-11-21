@@ -76,13 +76,17 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
             }
         });
 
-        // Priority Color
+        // Priority Color + Vertical Strip
         String priority = task.getPriority() != null ? task.getPriority().toUpperCase() : "MEDIUM";
         holder.badgePriority.setText(priority);
         int colorRes = R.color.priority_medium;
         if ("HIGH".equals(priority)) colorRes = R.color.priority_high;
         else if ("LOW".equals(priority)) colorRes = R.color.priority_low;
-        holder.badgePriority.setBackgroundTintList(ContextCompat.getColorStateList(holder.itemView.getContext(), colorRes));
+        android.content.res.ColorStateList priorityTint = ContextCompat.getColorStateList(holder.itemView.getContext(), colorRes);
+        holder.badgePriority.setBackgroundTintList(priorityTint);
+        if (holder.viewPriorityStrip != null) {
+            holder.viewPriorityStrip.setBackgroundTintList(priorityTint);
+        }
 
         // Due Date
         if (task.getDueDateMillis() > 0) {
@@ -95,7 +99,7 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
         // Recurrence Badge
         if (task.getRecurrence() != null && !task.getRecurrence().equalsIgnoreCase("NONE")) {
             holder.badgeRecurrence.setVisibility(View.VISIBLE);
-            holder.badgeRecurrence.setText("🔁 " + ("DAILY".equalsIgnoreCase(task.getRecurrence()) ? "Daily" : "Weekly"));
+            holder.badgeRecurrence.setText("DAILY".equalsIgnoreCase(task.getRecurrence()) ? "Daily" : "Weekly");
         } else {
             holder.badgeRecurrence.setVisibility(View.GONE);
         }
@@ -122,12 +126,14 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
     }
 
     static class TaskViewHolder extends RecyclerView.ViewHolder {
+        View viewPriorityStrip;
         CheckBox checkTaskCompleted;
         TextView txtTaskTitle, txtTaskDescription, badgePriority, badgeRecurrence, txtTaskDue;
         ImageView imgHasReminder, btnDeleteTask;
 
         public TaskViewHolder(@NonNull View itemView) {
             super(itemView);
+            viewPriorityStrip = itemView.findViewById(R.id.viewPriorityStrip);
             checkTaskCompleted = itemView.findViewById(R.id.checkTaskCompleted);
             txtTaskTitle = itemView.findViewById(R.id.txtTaskTitle);
             txtTaskDescription = itemView.findViewById(R.id.txtTaskDescription);

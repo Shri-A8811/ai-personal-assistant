@@ -43,6 +43,8 @@ public class PreferenceManager {
     private static final String KEY_AI_PERSONA = "ai_persona";
     private static final String KEY_AI_CUSTOM_SYSTEM_PROMPT = "ai_custom_system_prompt";
     private static final String KEY_CHAT_WITH_NOTES = "ai_chat_with_notes";
+    private static final String KEY_CACHED_BRIEFING_TEXT = "cached_briefing_text";
+    private static final String KEY_CACHED_BRIEFING_SIG = "cached_briefing_sig";
     private static final int CURRENT_VERSION = 5;
 
     private final SharedPreferences prefs;
@@ -296,7 +298,16 @@ public class PreferenceManager {
         return !email.isEmpty() && !prefs.getBoolean(KEY_IS_GUEST, false);
     }
 
-    public void saveUser(String name, String email, String password) {
+    /**
+     * Creates the single local account. Refuses to overwrite an existing account, because
+     * that would let anyone replace the password and open the existing data.
+     *
+     * @return false if an account already exists and nothing was saved.
+     */
+    public boolean saveUser(String name, String email, String password) {
+        if (hasAccount()) {
+            return false;
+        }
         String salt = SecurityUtil.generateSalt();
         String hashedPassword = SecurityUtil.hashPassword(password, salt);
         prefs.edit()
@@ -307,15 +318,25 @@ public class PreferenceManager {
             .putBoolean(KEY_IS_GUEST, false)
             .putBoolean(KEY_IS_LOGGED_IN, true)
             .apply();
+        return true;
     }
 
-    public void setGuestSession() {
+    /**
+     * Starts a local guest session. Guest mode is only available while no account exists on
+     * the device; otherwise it would bypass the password and expose the account's data.
+     * Does not touch the stored account name/email.
+     *
+     * @return false if an account exists and the guest session was refused.
+     */
+    public boolean setGuestSession() {
+        if (hasAccount()) {
+            return false;
+        }
         prefs.edit()
-            .putString(KEY_USER_NAME, "Guest User")
-            .putString(KEY_USER_EMAIL, "guest@workspace.local")
             .putBoolean(KEY_IS_GUEST, true)
             .putBoolean(KEY_IS_LOGGED_IN, true)
             .apply();
+        return true;
     }
 
     public boolean verifyCredentials(String email, String password) {
@@ -355,6 +376,7 @@ public class PreferenceManager {
     }
 
     public String getUserName() {
+        if (isGuest()) return "Guest";
         String name = prefs.getString(KEY_USER_NAME, "");
         return name.isEmpty() ? "User" : name;
     }
@@ -411,5 +433,21 @@ public class PreferenceManager {
             default:
                 return "You are an intelligent, concise, and helpful personal AI assistant. You help manage tasks, notes, reminders, and answer user queries cleanly.";
         }
+    }
+
+    // Cached Daily AI Briefing
+    public String getCachedBriefingText() {
+        return prefs.getString(KEY_CACHED_BRIEFING_TEXT, "");
+    }
+
+    public String getCachedBriefingSignature() {
+        return prefs.getString(KEY_CACHED_BRIEFING_SIG, "");
+    }
+
+    public void saveCachedBriefing(String signature, String text) {
+        prefs.edit()
+                .putString(KEY_CACHED_BRIEFING_SIG, signature != null ? signature : "")
+                .putString(KEY_CACHED_BRIEFING_TEXT, text != null ? text : "")
+                .apply();
     }
 }

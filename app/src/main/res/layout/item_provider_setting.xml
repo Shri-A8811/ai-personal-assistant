@@ -27,9 +27,9 @@
             <!-- Status Dot (Green if key configured, gray if not) -->
             <View
                 android:id="@+id/viewStatusDot"
-                android:layout_width="8dp"
-                android:layout_height="8dp"
-                android:background="@drawable/bg_model_pill" />
+                android:layout_width="10dp"
+                android:layout_height="10dp"
+                android:background="@drawable/bg_send_button" />
 
             <TextView
                 android:id="@+id/txtProviderTitle"
@@ -134,25 +134,29 @@
                     android:id="@+id/btnSearchModelsForProvider"
                     style="@style/Widget.Material3.Button.TextButton"
                     android:layout_width="wrap_content"
-                    android:layout_height="36dp"
+                    android:layout_height="40dp"
                     android:insetTop="0dp"
                     android:insetBottom="0dp"
-                    android:text="🔍 Search Models"
+                    android:text="Search Models"
                     android:textColor="@color/accent_gemini_blue"
-                    android:textSize="11sp" />
+                    android:textSize="12sp"
+                    app:icon="@drawable/ic_search"
+                    app:iconSize="16dp"
+                    app:iconTint="@color/accent_gemini_blue" />
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnSaveProviderKey"
                     style="@style/Widget.Material3.Button.TonalButton"
                     android:layout_width="wrap_content"
-                    android:layout_height="36dp"
+                    android:layout_height="40dp"
                     android:layout_marginStart="6dp"
                     android:backgroundTint="@color/accent_gemini_blue"
                     android:insetTop="0dp"
                     android:insetBottom="0dp"
                     android:text="Save &amp; Fetch"
-                    android:textColor="@color/white"
-                    android:textSize="11sp" />
+                    android:textColor="@color/on_electric_cyan"
+                    android:textSize="12sp"
+                    android:textStyle="bold" />
             </LinearLayout>
 
         </LinearLayout>

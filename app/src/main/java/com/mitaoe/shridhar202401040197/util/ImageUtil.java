@@ -8,6 +8,8 @@ import android.util.Base64;
 import android.webkit.MimeTypeMap;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.InputStream;
 
 public class ImageUtil {
@@ -19,6 +21,57 @@ public class ImageUtil {
         public EncodedImage(String base64, String mimeType) {
             this.base64 = base64;
             this.mimeType = mimeType;
+        }
+    }
+
+    /**
+     * Persists a picked image into app internal storage (chat_images) so historical
+     * attachments remain readable across process restarts when temporary content:// grants expire.
+     */
+    public static String copyImageToInternalStorage(Context context, Uri sourceUri) {
+        if (context == null || sourceUri == null) return null;
+        if ("file".equalsIgnoreCase(sourceUri.getScheme())) {
+            return sourceUri.toString();
+        }
+        try {
+            InputStream isCheck = context.getContentResolver().openInputStream(sourceUri);
+            if (isCheck == null) return sourceUri.toString();
+
+            BitmapFactory.Options opts = new BitmapFactory.Options();
+            opts.inJustDecodeBounds = true;
+            BitmapFactory.decodeStream(isCheck, null, opts);
+            isCheck.close();
+
+            int maxDim = 1280;
+            int sampleSize = 1;
+            while (opts.outWidth / sampleSize > maxDim || opts.outHeight / sampleSize > maxDim) {
+                sampleSize *= 2;
+            }
+
+            InputStream isLoad = context.getContentResolver().openInputStream(sourceUri);
+            if (isLoad == null) return sourceUri.toString();
+
+            BitmapFactory.Options decodeOpts = new BitmapFactory.Options();
+            decodeOpts.inSampleSize = sampleSize;
+            Bitmap bitmap = BitmapFactory.decodeStream(isLoad, null, decodeOpts);
+            isLoad.close();
+
+            if (bitmap == null) return sourceUri.toString();
+
+            File dir = new File(context.getFilesDir(), "chat_images");
+            if (!dir.exists()) {
+                dir.mkdirs();
+            }
+            File outFile = new File(dir, "img_" + System.currentTimeMillis() + ".jpg");
+            try (FileOutputStream fos = new FileOutputStream(outFile)) {
+                bitmap.compress(Bitmap.CompressFormat.JPEG, 88, fos);
+            } finally {
+                bitmap.recycle();
+            }
+            return Uri.fromFile(outFile).toString();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return sourceUri.toString();
         }
     }
 

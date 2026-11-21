@@ -38,10 +38,16 @@ public class NaturalLanguageActionParser {
 
         String lower = userInput.toLowerCase(Locale.ROOT).trim();
 
+        // Check for information inquiry questions that shouldn't trigger automatic task/reminder creation
+        if (lower.matches("^(what|how|why|who|where|which|is there|are there|do i have|do you have|did you|did i|can you tell me|tell me (?:what|how|why|who|where|when)).*")
+                || lower.matches(".*\\bremind me (?:about\\s+|of\\s+)?(what|how|why|who|where|when|which|if)\\b.*")) {
+            return result;
+        }
+
         // 1. Detect Note Intent: "take a note:", "create note:", "note down:", "add note:"
-        if (lower.startsWith("note:") || lower.startsWith("note down") || lower.startsWith("take a note") || lower.startsWith("create note") || lower.startsWith("write note")) {
+        if (lower.matches("(?i)^(?:please\\s+|can you\\s+|could you\\s+)?(note:|note down:?|take a note:?|create note:?|write note:?|add note:?).*")) {
             result.type = ActionType.CREATE_NOTE;
-            String content = userInput.replaceFirst("(?i)^(note:\\s*|note down:?\\s*|take a note:?\\s*|create note:?\\s*|write note:?\\s*)", "").trim();
+            String content = userInput.replaceFirst("(?i)^(?:please\\s+|can you\\s+|could you\\s+)?(note:\\s*|note down:?\\s*|take a note:?\\s*|create note:?\\s*|write note:?\\s*|add note:?\\s*)", "").trim();
             if (content.isEmpty()) content = userInput;
 
             String title = content.length() > 30 ? content.substring(0, 30) + "..." : content;
@@ -51,9 +57,10 @@ public class NaturalLanguageActionParser {
             return result;
         }
 
-        // 2. Detect Reminder Intent: "remind me to...", "set a reminder for...", "reminder: ..."
-        boolean isReminder = lower.contains("remind me to") || lower.contains("set a reminder") || lower.startsWith("reminder:") || lower.contains("remind me");
-        boolean isTask = lower.startsWith("add task") || lower.startsWith("new task") || lower.startsWith("create task") || lower.contains("task to");
+        // 2. Detect Reminder & Task Intent
+        boolean isReminder = lower.matches("(?i).*(?:^|\\b)(?:remind me|set a (?:[a-z]+\\s+)?reminder|reminder:).*")
+                && !lower.matches(".*\\bremind me (?:about\\s+|of\\s+)?(what|how|why|who|where|when|which|if)\\b.*");
+        boolean isTask = lower.matches("(?i)^(?:please\\s+|can you\\s+|could you\\s+)?(add(?:\\s+a)?\\s+task|create(?:\\s+a)?\\s+task|new\\s+task|task:?|task\\s+to\\b).*");
 
         if (isReminder || isTask) {
             result.type = isReminder ? ActionType.CREATE_REMINDER : ActionType.CREATE_TASK;
@@ -81,15 +88,34 @@ public class NaturalLanguageActionParser {
             result.recurrence = recurrence;
 
             // Extract Title
-            String cleaned = userInput.replaceFirst("(?i)^(remind me to\\s*|set a reminder for\\s*|reminder:\\s*|remind me\\s*|add task:?\\s*|new task:?\\s*|create task:?\\s*)", "").trim();
+            String cleaned = userInput.replaceFirst(
+                    "(?i)^(?:please\\s+|can you\\s+|could you\\s+)?" +
+                    "(?:remind me\\s+(?:daily\\s+|weekly\\s+|urgently\\s+)?to\\s*|" +
+                    "set a\\s+(?:daily\\s+|weekly\\s+)?reminder\\s+(?:for|to)\\s*|" +
+                    "reminder:\\s*|" +
+                    "remind me\\s*|" +
+                    "add(?:\\s+a)?\\s+task:?\\s*(?:to\\s*)?|" +
+                    "create(?:\\s+a)?\\s+task:?\\s*(?:to\\s*)?|" +
+                    "new\\s+task:?\\s*|" +
+                    "task:?\\s*(?:to\\s*)?)", ""
+            ).trim();
 
-            // Strip time and recurrence phrases from title for clean display
-            cleaned = cleaned.replaceAll("(?i)(every day|daily|every week|weekly|tomorrow|today|tonight|at \\d{1,2}(:\\d{2})?\\s*(am|pm)?|with (high|low|medium) priority)", "").trim();
-            if (cleaned.endsWith("at") || cleaned.endsWith("on") || cleaned.endsWith("for") || cleaned.endsWith("every")) {
-                cleaned = cleaned.substring(0, cleaned.lastIndexOf(' ')).trim();
-            }
+            // Strip time and recurrence phrases from title for clean display (whole words only,
+            // so "boat 5pm" is not read as "bo" + "at 5pm").
+            cleaned = cleaned.replaceAll("(?i)\\b(every day|daily|every week|weekly|tomorrow|today|tonight|at \\d{1,2}(:\\d{2})?\\s*(am|pm)?|with (high|low|medium) priority)\\b", "");
+            cleaned = cleaned.replaceAll("\\s{2,}", " ").trim();
+            // Drop dangling prepositions left behind ("buy milk at" -> "buy milk"), but only as a
+            // separate word: "call Jason" and "check the boat" must stay intact.
+            String previous;
+            do {
+                previous = cleaned;
+                cleaned = cleaned.replaceAll("(?i)(^|\\s+)(at|on|for|every|by)$", "").trim();
+            } while (!cleaned.equals(previous));
 
-            if (cleaned.isEmpty()) cleaned = "Personal Reminder";
+            // Strip trailing punctuation
+            cleaned = cleaned.replaceAll("[\\?\\.]+$", "").trim();
+
+            if (cleaned.isEmpty()) cleaned = isReminder ? "Personal Reminder" : "New Task";
             // Capitalize first letter
             cleaned = cleaned.substring(0, 1).toUpperCase(Locale.ROOT) + cleaned.substring(1);
             result.title = cleaned;

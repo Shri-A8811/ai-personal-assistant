@@ -9,18 +9,20 @@
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/topBarNote"
         android:layout_width="match_parent"
-        android:layout_height="56dp"
+        android:layout_height="60dp"
         android:background="@color/surface_dark"
-        android:paddingHorizontal="16dp"
+        android:paddingStart="4dp"
+        android:paddingEnd="16dp"
         app:layout_constraintTop_toTopOf="parent">
 
         <ImageView
             android:id="@+id/btnBack"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
             android:background="?attr/selectableItemBackgroundBorderless"
-            android:padding="4dp"
-            android:src="@drawable/ic_chat"
+            android:contentDescription="Navigate back"
+            android:padding="12dp"
+            android:src="@drawable/ic_arrow_back"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
@@ -29,10 +31,10 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="12dp"
+            android:layout_marginStart="4dp"
             android:text="Edit Note"
             android:textColor="@color/text_primary"
-            android:textSize="17sp"
+            android:textSize="18sp"
             android:textStyle="bold"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintStart_toEndOf="@id/btnBack"
@@ -40,11 +42,12 @@
 
         <ImageView
             android:id="@+id/btnPinNote"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
-            android:layout_marginEnd="8dp"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:layout_marginEnd="6dp"
             android:background="?attr/selectableItemBackgroundBorderless"
-            android:padding="6dp"
+            android:contentDescription="Pin note"
+            android:padding="10dp"
             android:src="@drawable/ic_pin"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toStartOf="@id/btnSaveNote"
@@ -54,15 +57,25 @@
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnSaveNote"
             android:layout_width="wrap_content"
-            android:layout_height="38dp"
+            android:layout_height="40dp"
             android:backgroundTint="@color/accent_gemini_blue"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
             android:text="Save"
-            android:textColor="@color/white"
+            android:textColor="@color/on_electric_cyan"
             android:textSize="13sp"
+            android:textStyle="bold"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
     </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <View
+        android:id="@+id/topBarNoteDivider"
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="@color/divider"
+        app:layout_constraintTop_toBottomOf="@id/topBarNote" />
 
     <!-- Scrollable Editor Area -->
     <ScrollView
@@ -73,7 +86,7 @@
         app:layout_constraintBottom_toTopOf="@id/aiToolsToolbar"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/topBarNote">
+        app:layout_constraintTop_toBottomOf="@id/topBarNoteDivider">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -89,7 +102,7 @@
                 android:inputType="textCapSentences"
                 android:textColor="@color/text_primary"
                 android:textColorHint="@color/text_muted"
-                android:textSize="20sp"
+                android:textSize="22sp"
                 android:textStyle="bold" />
 
             <!-- Color Tags Selection -->
@@ -97,70 +110,77 @@
                 android:id="@+id/layoutColorTags"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
+                android:layout_marginTop="12dp"
                 android:gravity="center_vertical"
                 android:orientation="horizontal">
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Color Tag: "
-                    android:textColor="@color/text_muted"
-                    android:textSize="12sp" />
+                    android:text="Tag: "
+                    android:textColor="@color/text_secondary"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
 
                 <View
                     android:id="@+id/colorDefault"
-                    android:layout_width="22dp"
-                    android:layout_height="22dp"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
                     android:layout_marginStart="8dp"
-                    android:background="@drawable/bg_model_pill"
-                    android:backgroundTint="#2D3748" />
+                    android:background="@drawable/bg_send_button"
+                    android:backgroundTint="#2D3748"
+                    android:contentDescription="Default tag color" />
 
                 <View
                     android:id="@+id/colorBlue"
-                    android:layout_width="22dp"
-                    android:layout_height="22dp"
-                    android:layout_marginStart="8dp"
-                    android:background="@drawable/bg_model_pill"
-                    android:backgroundTint="#1E3A8A" />
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:layout_marginStart="10dp"
+                    android:background="@drawable/bg_send_button"
+                    android:backgroundTint="#1E3A8A"
+                    android:contentDescription="Blue tag color" />
 
                 <View
                     android:id="@+id/colorGreen"
-                    android:layout_width="22dp"
-                    android:layout_height="22dp"
-                    android:layout_marginStart="8dp"
-                    android:background="@drawable/bg_model_pill"
-                    android:backgroundTint="#065F46" />
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:layout_marginStart="10dp"
+                    android:background="@drawable/bg_send_button"
+                    android:backgroundTint="#065F46"
+                    android:contentDescription="Green tag color" />
 
                 <View
                     android:id="@+id/colorPurple"
-                    android:layout_width="22dp"
-                    android:layout_height="22dp"
-                    android:layout_marginStart="8dp"
-                    android:background="@drawable/bg_model_pill"
-                    android:backgroundTint="#581C87" />
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:layout_marginStart="10dp"
+                    android:background="@drawable/bg_send_button"
+                    android:backgroundTint="#581C87"
+                    android:contentDescription="Purple tag color" />
 
                 <View
                     android:id="@+id/colorAmber"
-                    android:layout_width="22dp"
-                    android:layout_height="22dp"
-                    android:layout_marginStart="8dp"
-                    android:background="@drawable/bg_model_pill"
-                    android:backgroundTint="#78350F" />
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:layout_marginStart="10dp"
+                    android:background="@drawable/bg_send_button"
+                    android:backgroundTint="#78350F"
+                    android:contentDescription="Amber tag color" />
 
                 <View
                     android:id="@+id/colorCrimson"
-                    android:layout_width="22dp"
-                    android:layout_height="22dp"
-                    android:layout_marginStart="8dp"
-                    android:background="@drawable/bg_model_pill"
-                    android:backgroundTint="#881337" />
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:layout_marginStart="10dp"
+                    android:background="@drawable/bg_send_button"
+                    android:backgroundTint="#881337"
+                    android:contentDescription="Crimson tag color" />
             </LinearLayout>
 
             <View
                 android:layout_width="match_parent"
                 android:layout_height="1dp"
-                android:layout_marginVertical="12dp"
+                android:layout_marginVertical="14dp"
                 android:background="@color/divider" />
 
             <EditText
@@ -171,7 +191,7 @@
                 android:gravity="top|start"
                 android:hint="Start typing your thoughts, meeting notes, ideas..."
                 android:inputType="textCapSentences|textMultiLine"
-                android:lineSpacingExtra="4dp"
+                android:lineSpacingMultiplier="1.25"
                 android:minLines="12"
                 android:textColor="@color/text_primary"
                 android:textColorHint="@color/text_muted"
@@ -195,15 +215,15 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="AI Tools:"
-            android:textColor="@color/text_muted"
+            android:text="AI Actions"
+            android:textColor="@color/text_secondary"
             android:textSize="12sp"
             android:textStyle="bold" />
 
         <HorizontalScrollView
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
+            android:layout_marginStart="10dp"
             android:layout_weight="1"
             android:scrollbars="none">
 
@@ -216,27 +236,33 @@
                     android:id="@+id/btnAiSummarize"
                     style="@style/Widget.Material3.Button.TonalButton"
                     android:layout_width="wrap_content"
-                    android:layout_height="36dp"
+                    android:layout_height="40dp"
                     android:layout_marginEnd="8dp"
                     android:text="@string/ai_summarize"
-                    android:textSize="12sp" />
+                    android:textSize="12sp"
+                    app:icon="@drawable/ic_sparkle"
+                    app:iconSize="16dp" />
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnAiExtractTasks"
                     style="@style/Widget.Material3.Button.TonalButton"
                     android:layout_width="wrap_content"
-                    android:layout_height="36dp"
+                    android:layout_height="40dp"
                     android:layout_marginEnd="8dp"
                     android:text="@string/ai_extract_tasks"
-                    android:textSize="12sp" />
+                    android:textSize="12sp"
+                    app:icon="@drawable/ic_tasks"
+                    app:iconSize="16dp" />
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnAiPolish"
                     style="@style/Widget.Material3.Button.TonalButton"
                     android:layout_width="wrap_content"
-                    android:layout_height="36dp"
+                    android:layout_height="40dp"
                     android:text="@string/ai_polish"
-                    android:textSize="12sp" />
+                    android:textSize="12sp"
+                    app:icon="@drawable/ic_notes"
+                    app:iconSize="16dp" />
 
             </LinearLayout>
         </HorizontalScrollView>

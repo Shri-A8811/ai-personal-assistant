@@ -1,5 +1,7 @@
 package com.mitaoe.shridhar202401040197.ui.settings;
 
+import android.content.Context;
+import android.content.res.ColorStateList;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -162,24 +164,25 @@ public class SettingsBottomSheet extends BottomSheetDialogFragment {
         input.setPadding(32, 24, 32, 24);
         input.setTextColor(ContextCompat.getColor(requireContext(), R.color.text_primary));
 
+        final Context appCtx = requireContext().getApplicationContext();
         new androidx.appcompat.app.AlertDialog.Builder(requireContext())
                 .setTitle("Import Backup JSON")
                 .setView(input)
                 .setPositiveButton("Import", (dialog, which) -> {
                     String json = input.getText().toString().trim();
                     if (json.isEmpty()) {
-                        Toast.makeText(requireContext(), "Please paste backup JSON", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(appCtx, "Please paste backup JSON", Toast.LENGTH_SHORT).show();
                         return;
                     }
-                    com.mitaoe.shridhar202401040197.util.BackupManager.importBackupFromJson(requireContext(), json, new com.mitaoe.shridhar202401040197.util.BackupManager.ImportCallback() {
+                    com.mitaoe.shridhar202401040197.util.BackupManager.importBackupFromJson(appCtx, json, new com.mitaoe.shridhar202401040197.util.BackupManager.ImportCallback() {
                         @Override
                         public void onSuccess(int tasksCount, int notesCount) {
-                            Toast.makeText(requireContext(), "Imported " + tasksCount + " tasks & " + notesCount + " notes! 🎉", Toast.LENGTH_LONG).show();
+                            Toast.makeText(appCtx, "Imported " + tasksCount + " tasks & " + notesCount + " notes", Toast.LENGTH_LONG).show();
                         }
 
                         @Override
                         public void onError(String message) {
-                            Toast.makeText(requireContext(), "Import failed: " + message, Toast.LENGTH_LONG).show();
+                            Toast.makeText(appCtx, "Import failed: " + message, Toast.LENGTH_LONG).show();
                         }
                     });
                 })
@@ -188,6 +191,7 @@ public class SettingsBottomSheet extends BottomSheetDialogFragment {
     }
 
     private void updatePinnedSummary() {
+        if (!isAdded() || getView() == null || txtPinnedSummary == null) return;
         List<AiModel> pinned = prefManager.getPinnedModels();
         if (pinned.isEmpty()) {
             txtPinnedSummary.setText("0 models pinned — tap to search & pin free models");
@@ -197,13 +201,16 @@ public class SettingsBottomSheet extends BottomSheetDialogFragment {
     }
 
     private void openModelLibrary(@Nullable String initialProviderFilter) {
+        if (!isAdded() || getParentFragmentManager().isStateSaved()) return;
         ModelLibraryBottomSheet librarySheet = new ModelLibraryBottomSheet();
         librarySheet.setOnModelLibraryListener(new ModelLibraryBottomSheet.OnModelLibraryListener() {
             @Override
             public void onModelSelected(AiModel model) {
-                updatePinnedSummary();
+                if (isAdded() && getView() != null) {
+                    updatePinnedSummary();
+                }
                 if (listener != null) listener.onSettingsSaved();
-                dismiss();
+                if (isAdded()) dismissAllowingStateLoss();
             }
 
             @Override
@@ -211,11 +218,15 @@ public class SettingsBottomSheet extends BottomSheetDialogFragment {
 
             @Override
             public void onModelsUpdated() {
-                updatePinnedSummary();
+                if (isAdded() && getView() != null) {
+                    updatePinnedSummary();
+                }
                 if (listener != null) listener.onSettingsSaved();
             }
         });
-        librarySheet.show(getParentFragmentManager(), "ModelLibrarySheet");
+        try {
+            librarySheet.show(getParentFragmentManager(), "ModelLibrarySheet");
+        } catch (IllegalStateException ignored) {}
     }
 
     private List<ProviderItem> getProviderItems() {
@@ -237,6 +248,7 @@ public class SettingsBottomSheet extends BottomSheetDialogFragment {
         String title;
         String subtitle;
         boolean isExpanded = false;
+        boolean isFetching = false;
 
         public ProviderItem(String key, String title, String subtitle) {
             this.key = key;
@@ -262,25 +274,27 @@ public class SettingsBottomSheet extends BottomSheetDialogFragment {
         @Override
         public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
             ProviderItem item = items.get(position);
+            Context itemCtx = holder.itemView.getContext();
             holder.txtTitle.setText(item.title);
 
             String savedKey = prefManager.getApiKey(item.key);
             boolean hasKey = !savedKey.isEmpty();
 
-            // Status dot
+            // Status dot (preserve oval shape via backgroundTintList)
             if (hasKey) {
-                holder.viewStatusDot.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.status_active));
+                holder.viewStatusDot.setBackgroundTintList(ColorStateList.valueOf(ContextCompat.getColor(itemCtx, R.color.status_active)));
                 holder.txtKeyPreview.setText(PreferenceManager.maskApiKey(savedKey));
-                holder.txtKeyPreview.setTextColor(ContextCompat.getColor(requireContext(), R.color.text_primary));
+                holder.txtKeyPreview.setTextColor(ContextCompat.getColor(itemCtx, R.color.text_primary));
             } else {
-                holder.viewStatusDot.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.status_inactive));
+                holder.viewStatusDot.setBackgroundTintList(ColorStateList.valueOf(ContextCompat.getColor(itemCtx, R.color.status_inactive)));
                 holder.txtKeyPreview.setText("Paste " + item.title + " key");
-                holder.txtKeyPreview.setTextColor(ContextCompat.getColor(requireContext(), R.color.text_muted));
+                holder.txtKeyPreview.setTextColor(ContextCompat.getColor(itemCtx, R.color.text_muted));
             }
 
-            // Expanded state
+            // Expanded & loading states
             holder.layoutExpanded.setVisibility(item.isExpanded ? View.VISIBLE : View.GONE);
             holder.imgChevron.setRotation(item.isExpanded ? 180f : 0f);
+            holder.progressFetch.setVisibility(item.isFetching ? View.VISIBLE : View.GONE);
 
             // Pre-fill inputs
             holder.editKey.setText(savedKey);
@@ -293,43 +307,52 @@ public class SettingsBottomSheet extends BottomSheetDialogFragment {
 
             // Expand/collapse toggle
             holder.layoutRowHeader.setOnClickListener(v -> {
-                item.isExpanded = !item.isExpanded;
-                notifyItemChanged(position);
+                int pos = holder.getBindingAdapterPosition();
+                if (pos == RecyclerView.NO_POSITION) return;
+                ProviderItem current = items.get(pos);
+                current.isExpanded = !current.isExpanded;
+                notifyItemChanged(pos);
             });
 
             // Save & Fetch Button
             holder.btnSaveProviderKey.setOnClickListener(v -> {
+                int pos = holder.getBindingAdapterPosition();
+                if (pos == RecyclerView.NO_POSITION) return;
+                ProviderItem current = items.get(pos);
                 String inputKey = holder.editKey.getText() != null ? holder.editKey.getText().toString().trim() : "";
-                prefManager.setApiKey(item.key, inputKey);
+                prefManager.setApiKey(current.key, inputKey);
 
-                if ("custom".equalsIgnoreCase(item.key) && holder.editCustomBaseUrl.getText() != null) {
+                if ("custom".equalsIgnoreCase(current.key) && holder.editCustomBaseUrl.getText() != null) {
                     prefManager.setCustomBaseUrl(holder.editCustomBaseUrl.getText().toString().trim());
                 }
 
                 // If no active provider set, make this provider active
                 if (prefManager.getActiveProvider().isEmpty()) {
-                    prefManager.setActiveProvider(item.key);
+                    prefManager.setActiveProvider(current.key);
                 }
 
-                notifyItemChanged(position);
+                current.isFetching = true;
+                notifyItemChanged(pos);
+                final Context appCtx = itemCtx.getApplicationContext();
 
-                holder.progressFetch.setVisibility(View.VISIBLE);
-                aiService.fetchAvailableModels(item.key, inputKey, new AiService.ModelFetchCallback() {
+                aiService.fetchAvailableModels(current.key, inputKey, new AiService.ModelFetchCallback() {
                     @Override
                     public void onSuccess(List<AiModel> models) {
-                        if (isAdded()) {
-                            holder.progressFetch.setVisibility(View.GONE);
-                            Toast.makeText(requireContext(), "Saved! Fetched " + models.size() + " models.", Toast.LENGTH_SHORT).show();
-                            openModelLibrary(item.key);
+                        current.isFetching = false;
+                        if (isAdded() && getView() != null) {
+                            notifyDataSetChanged();
+                            Toast.makeText(appCtx, "Saved! Fetched " + models.size() + " models.", Toast.LENGTH_SHORT).show();
+                            openModelLibrary(current.key);
                         }
                     }
 
                     @Override
                     public void onError(String error) {
-                        if (isAdded()) {
-                            holder.progressFetch.setVisibility(View.GONE);
-                            Toast.makeText(requireContext(), "Key saved! (" + error + ")", Toast.LENGTH_SHORT).show();
-                            openModelLibrary(item.key);
+                        current.isFetching = false;
+                        if (isAdded() && getView() != null) {
+                            notifyDataSetChanged();
+                            Toast.makeText(appCtx, "Key saved! (" + error + ")", Toast.LENGTH_SHORT).show();
+                            openModelLibrary(current.key);
                         }
                     }
                 });
@@ -337,7 +360,9 @@ public class SettingsBottomSheet extends BottomSheetDialogFragment {
 
             // Search Models for this Provider Button
             holder.btnSearchModelsForProvider.setOnClickListener(v -> {
-                openModelLibrary(item.key);
+                int pos = holder.getBindingAdapterPosition();
+                if (pos == RecyclerView.NO_POSITION) return;
+                openModelLibrary(items.get(pos).key);
             });
         }
 

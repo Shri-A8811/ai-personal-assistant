@@ -1,6 +1,8 @@
 package com.mitaoe.shridhar202401040197.ui.chat;
 
 import android.Manifest;
+import android.app.Activity;
+import android.content.Context;
 import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Bundle;
@@ -32,12 +34,12 @@ import com.mitaoe.shridhar202401040197.data.database.AppDatabase;
 import com.mitaoe.shridhar202401040197.data.model.ChatMessage;
 import com.mitaoe.shridhar202401040197.data.model.Conversation;
 import com.mitaoe.shridhar202401040197.data.preference.PreferenceManager;
+import com.mitaoe.shridhar202401040197.util.AppExecutors;
+import com.mitaoe.shridhar202401040197.util.ImageUtil;
 import com.mitaoe.shridhar202401040197.util.VoiceAssistantHelper;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import com.mitaoe.shridhar202401040197.util.AppExecutors;
 
 public class ChatFragment extends Fragment {
 
@@ -45,8 +47,9 @@ public class ChatFragment extends Fragment {
     private ChatAdapter chatAdapter;
     private EditText editChatMessage;
     private FrameLayout btnSend;
-    private ImageView btnVoiceMic, btnAttachImage, btnRemoveImage, imgAttachedPreview;
-    private LinearLayout previewContainer, layoutWelcome;
+    private ImageView btnVoiceMic, btnAttachImage, btnRemoveImage, imgAttachedPreview, imgSendIcon;
+    private LinearLayout previewContainer;
+    private View layoutWelcome;
     private TextView chipSuggest1, chipSuggest2, chipSuggest3, chipSuggest4;
 
     private AppDatabase db;
@@ -56,24 +59,34 @@ public class ChatFragment extends Fragment {
 
     private Uri attachedImageUri = null;
     private List<ChatMessage> currentHistory = new ArrayList<>();
-    private long currentConversationId = 0;
+    private volatile long currentConversationId = 0;
     private LiveData<List<ChatMessage>> currentMessagesLiveData = null;
+
+    private volatile AiService.RequestHandle activeStreamHandle = null;
+    private volatile ChatMessage activeStreamingMsg = null;
+    private volatile long activeStreamingConvId = -1;
+
+    public long getCurrentConversationId() {
+        return currentConversationId;
+    }
 
     private final ActivityResultLauncher<String> imagePickerLauncher =
             registerForActivityResult(new ActivityResultContracts.GetContent(), uri -> {
+                if (!isAdded() || getView() == null || getContext() == null) return;
                 if (uri != null) {
                     attachedImageUri = uri;
-                    previewContainer.setVisibility(View.VISIBLE);
-                    imgAttachedPreview.setImageURI(uri);
+                    if (previewContainer != null) previewContainer.setVisibility(View.VISIBLE);
+                    if (imgAttachedPreview != null) imgAttachedPreview.setImageURI(uri);
                 }
             });
 
     private final ActivityResultLauncher<String> recordAudioPermissionLauncher =
             registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted -> {
+                if (!isAdded() || getContext() == null) return;
                 if (isGranted) {
                     startVoiceInput();
                 } else {
-                    Toast.makeText(requireContext(), "Microphone permission is required for voice commands.", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(getContext(), "Microphone permission is required for voice commands.", Toast.LENGTH_SHORT).show();
                 }
             });
 
@@ -90,6 +103,7 @@ public class ChatFragment extends Fragment {
         recyclerChat = view.findViewById(R.id.recyclerChat);
         editChatMessage = view.findViewById(R.id.editChatMessage);
         btnSend = view.findViewById(R.id.btnSend);
+        imgSendIcon = view.findViewById(R.id.imgSendIcon);
         btnVoiceMic = view.findViewById(R.id.btnVoiceMic);
         btnAttachImage = view.findViewById(R.id.btnAttachImage);
         btnRemoveImage = view.findViewById(R.id.btnRemoveImage);
@@ -99,7 +113,7 @@ public class ChatFragment extends Fragment {
         TextView txtWelcomeTitle = view.findViewById(R.id.txtWelcomeTitle);
         if (txtWelcomeTitle != null) {
             String userName = prefManager.getUserName();
-            txtWelcomeTitle.setText("Hello, " + userName + "!\nHow can I assist you today?");
+            txtWelcomeTitle.setText("Hello, " + userName + "\nHow can I assist you today?");
         }
 
         chipSuggest1 = view.findViewById(R.id.chipSuggest1);
@@ -111,21 +125,20 @@ public class ChatFragment extends Fragment {
         layoutManager.setStackFromEnd(true);
         recyclerChat.setLayoutManager(layoutManager);
 
-        chatAdapter = new ChatAdapter(text -> voiceHelper.speak(text));
+        chatAdapter = new ChatAdapter(text -> {
+            if (voiceHelper != null) voiceHelper.speak(text);
+        });
         recyclerChat.setAdapter(chatAdapter);
 
         setupStarterChips();
 
-        // Load latest conversation or start fresh
-        AppExecutors.getInstance().diskIO().execute(() -> {
-            Conversation latest = db.conversationDao().getLatestConversationSync();
-            long initConvId = latest != null ? latest.getId() : 0;
-            if (isAdded()) {
-                requireActivity().runOnUiThread(() -> loadConversation(initConvId));
+        btnSend.setOnClickListener(v -> {
+            if (activeStreamHandle != null && !activeStreamHandle.isCancelled()) {
+                stopActiveStream();
+            } else {
+                sendMessage();
             }
         });
-
-        btnSend.setOnClickListener(v -> sendMessage());
         btnAttachImage.setOnClickListener(v -> imagePickerLauncher.launch("image/*"));
         btnRemoveImage.setOnClickListener(v -> {
             attachedImageUri = null;
@@ -136,11 +149,58 @@ public class ChatFragment extends Fragment {
         return view;
     }
 
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+
+        // Load latest conversation or start fresh once the view is ready
+        AppExecutors.getInstance().diskIO().execute(() -> {
+            Conversation latest = db.conversationDao().getLatestConversationSync();
+            long initConvId = latest != null ? latest.getId() : 0;
+            Activity act = getActivity();
+            if (isAdded() && act != null && !act.isFinishing() && !act.isDestroyed()) {
+                act.runOnUiThread(() -> {
+                    if (isAdded() && getView() != null) {
+                        loadConversation(initConvId);
+                    }
+                });
+            }
+        });
+    }
+
+    private void setStreamingUiState(boolean streaming) {
+        if (!isAdded() || getView() == null) return;
+        if (imgSendIcon != null) {
+            imgSendIcon.setImageResource(streaming ? R.drawable.ic_stop : R.drawable.ic_send);
+        }
+        if (btnSend != null) {
+            btnSend.setContentDescription(streaming ? "Stop generating" : "Send message");
+        }
+    }
+
+    private void stopActiveStream() {
+        if (activeStreamHandle != null) {
+            activeStreamHandle.cancel();
+            activeStreamHandle = null;
+        }
+        activeStreamingMsg = null;
+        activeStreamingConvId = -1;
+        setStreamingUiState(false);
+    }
+
+    private void safeScrollToBottom() {
+        if (recyclerChat != null && chatAdapter != null) {
+            int count = chatAdapter.getItemCount();
+            if (count > 0) {
+                recyclerChat.scrollToPosition(count - 1);
+            }
+        }
+    }
+
     private void setupStarterChips() {
         View.OnClickListener clickListener = v -> {
             if (v instanceof TextView) {
                 String text = ((TextView) v).getText().toString();
-                // Strip emoji prefix
                 String prompt = text.replaceFirst("^[💡⏰📝✅]\\s*", "").trim();
                 editChatMessage.setText(prompt);
                 sendMessage();
@@ -154,20 +214,27 @@ public class ChatFragment extends Fragment {
     }
 
     public void startNewChat() {
+        stopActiveStream();
         currentConversationId = 0;
-        currentHistory.clear();
-        chatAdapter.setMessages(new ArrayList<>());
+        currentHistory = new ArrayList<>();
+        if (chatAdapter != null) {
+            chatAdapter.setMessages(new ArrayList<>());
+        }
         if (currentMessagesLiveData != null) {
-            currentMessagesLiveData.removeObservers(getViewLifecycleOwner());
+            try {
+                if (isAdded() && getView() != null) {
+                    currentMessagesLiveData.removeObservers(getViewLifecycleOwner());
+                }
+            } catch (Exception ignored) {}
             currentMessagesLiveData = null;
         }
-        layoutWelcome.setVisibility(View.VISIBLE);
-        recyclerChat.setVisibility(View.GONE);
+        if (layoutWelcome != null) layoutWelcome.setVisibility(View.VISIBLE);
+        if (recyclerChat != null) recyclerChat.setVisibility(View.GONE);
         if (getView() != null) {
             TextView txtWelcomeTitle = getView().findViewById(R.id.txtWelcomeTitle);
             if (txtWelcomeTitle != null) {
                 String userName = prefManager.getUserName();
-                txtWelcomeTitle.setText("Hello, " + userName + "!\nHow can I assist you today?");
+                txtWelcomeTitle.setText("Hello, " + userName + "\nHow can I assist you today?");
             }
         }
         if (getActivity() instanceof MainActivity) {
@@ -176,9 +243,19 @@ public class ChatFragment extends Fragment {
     }
 
     public void loadConversation(long conversationId) {
+        if (activeStreamingConvId != -1 && activeStreamingConvId != conversationId) {
+            stopActiveStream();
+        }
         this.currentConversationId = conversationId;
+        if (!isAdded() || getView() == null) {
+            return;
+        }
+
         if (currentMessagesLiveData != null) {
-            currentMessagesLiveData.removeObservers(getViewLifecycleOwner());
+            try {
+                currentMessagesLiveData.removeObservers(getViewLifecycleOwner());
+            } catch (Exception ignored) {}
+            currentMessagesLiveData = null;
         }
 
         if (conversationId == 0) {
@@ -187,20 +264,31 @@ public class ChatFragment extends Fragment {
         }
 
         currentMessagesLiveData = db.chatDao().getMessagesForConversation(conversationId);
-        currentMessagesLiveData.observe(getViewLifecycleOwner(), messages -> {
-            if (messages != null && !messages.isEmpty()) {
-                currentHistory = messages;
-                chatAdapter.setMessages(messages);
-                layoutWelcome.setVisibility(View.GONE);
-                recyclerChat.setVisibility(View.VISIBLE);
-                recyclerChat.scrollToPosition(messages.size() - 1);
-            } else {
-                currentHistory.clear();
-                chatAdapter.setMessages(new ArrayList<>());
-                layoutWelcome.setVisibility(View.VISIBLE);
-                recyclerChat.setVisibility(View.GONE);
-            }
-        });
+        try {
+            currentMessagesLiveData.observe(getViewLifecycleOwner(), messages -> {
+                if (!isAdded() || getView() == null) return;
+                List<ChatMessage> safeMessages = messages != null ? messages : new ArrayList<>();
+                currentHistory = new ArrayList<>(safeMessages);
+
+                List<ChatMessage> displayList = new ArrayList<>(safeMessages);
+                if (activeStreamingMsg != null && activeStreamingConvId == conversationId) {
+                    displayList.add(activeStreamingMsg);
+                }
+
+                if (!displayList.isEmpty()) {
+                    if (chatAdapter != null) chatAdapter.setMessages(displayList);
+                    if (layoutWelcome != null) layoutWelcome.setVisibility(View.GONE);
+                    if (recyclerChat != null) {
+                        recyclerChat.setVisibility(View.VISIBLE);
+                        safeScrollToBottom();
+                    }
+                } else {
+                    if (chatAdapter != null) chatAdapter.setMessages(new ArrayList<>());
+                    if (layoutWelcome != null) layoutWelcome.setVisibility(View.VISIBLE);
+                    if (recyclerChat != null) recyclerChat.setVisibility(View.GONE);
+                }
+            });
+        } catch (Exception ignored) {}
 
         if (getActivity() instanceof MainActivity) {
             ((MainActivity) getActivity()).updateSelectedConversationInDrawer(conversationId);
@@ -216,21 +304,35 @@ public class ChatFragment extends Fragment {
     }
 
     private void startVoiceInput() {
-        btnVoiceMic.setColorFilter(ContextCompat.getColor(requireContext(), R.color.accent_gemini_blue));
-        Toast.makeText(requireContext(), "Listening...", Toast.LENGTH_SHORT).show();
+        Context ctx = getContext();
+        if (ctx == null || !isAdded()) return;
+        if (btnVoiceMic != null) {
+            btnVoiceMic.setColorFilter(ContextCompat.getColor(ctx, R.color.accent_gemini_blue));
+        }
+        Toast.makeText(ctx, "Listening...", Toast.LENGTH_SHORT).show();
 
         voiceHelper.startListening(new VoiceAssistantHelper.SpeechResultCallback() {
             @Override
             public void onSpeechResult(String recognizedText) {
-                btnVoiceMic.setColorFilter(ContextCompat.getColor(requireContext(), R.color.text_secondary));
-                editChatMessage.setText(recognizedText);
-                sendMessage();
+                Context innerCtx = getContext();
+                if (!isAdded() || getView() == null || innerCtx == null) return;
+                if (btnVoiceMic != null) {
+                    btnVoiceMic.setColorFilter(ContextCompat.getColor(innerCtx, R.color.text_secondary));
+                }
+                if (editChatMessage != null) {
+                    editChatMessage.setText(recognizedText);
+                    sendMessage();
+                }
             }
 
             @Override
             public void onSpeechError(String errorMessage) {
-                btnVoiceMic.setColorFilter(ContextCompat.getColor(requireContext(), R.color.text_secondary));
-                Toast.makeText(requireContext(), errorMessage, Toast.LENGTH_SHORT).show();
+                Context innerCtx = getContext();
+                if (!isAdded() || getView() == null || innerCtx == null) return;
+                if (btnVoiceMic != null) {
+                    btnVoiceMic.setColorFilter(ContextCompat.getColor(innerCtx, R.color.text_secondary));
+                }
+                Toast.makeText(innerCtx, errorMessage, Toast.LENGTH_SHORT).show();
             }
 
             @Override
@@ -239,30 +341,35 @@ public class ChatFragment extends Fragment {
     }
 
     private void sendMessage() {
+        if (editChatMessage == null) return;
         String input = editChatMessage.getText().toString().trim();
         if (input.isEmpty() && attachedImageUri == null) return;
 
+        Context ctx = getContext();
+        if (ctx == null) return;
+        final Context appContext = ctx.getApplicationContext();
+
         editChatMessage.setText("");
-        String imageUriStr = attachedImageUri != null ? attachedImageUri.toString() : null;
+        final Uri pickedUri = attachedImageUri;
         attachedImageUri = null;
-        previewContainer.setVisibility(View.GONE);
-        layoutWelcome.setVisibility(View.GONE);
-        recyclerChat.setVisibility(View.VISIBLE);
+        if (previewContainer != null) previewContainer.setVisibility(View.GONE);
+        if (layoutWelcome != null) layoutWelcome.setVisibility(View.GONE);
+        if (recyclerChat != null) recyclerChat.setVisibility(View.VISIBLE);
+
+        final List<ChatMessage> historySnapshot = new ArrayList<>(currentHistory);
 
         AppExecutors.getInstance().diskIO().execute(() -> {
-            String promptText = input.isEmpty() && imageUriStr != null ? "Analyze this image" : input;
+            String persistedImageUri = pickedUri != null
+                    ? ImageUtil.copyImageToInternalStorage(appContext, pickedUri)
+                    : null;
+            String promptText = input.isEmpty() && persistedImageUri != null ? "Analyze this image" : input;
 
-            // If new conversation, create conversation record first
+            boolean createdNewConv = false;
             if (currentConversationId == 0) {
                 String title = promptText.length() > 32 ? promptText.substring(0, 32) + "..." : promptText;
                 Conversation conv = new Conversation(title, System.currentTimeMillis(), System.currentTimeMillis(), prefManager.getActiveModelName());
                 currentConversationId = db.conversationDao().insert(conv);
-
-                if (isAdded()) {
-                    requireActivity().runOnUiThread(() -> {
-                        loadConversation(currentConversationId);
-                    });
-                }
+                createdNewConv = true;
             } else {
                 Conversation conv = db.conversationDao().getConversationById(currentConversationId);
                 if (conv != null) {
@@ -270,16 +377,18 @@ public class ChatFragment extends Fragment {
                     db.conversationDao().update(conv);
                 }
             }
+            final long targetConvId = currentConversationId;
+            final boolean shouldAttachObserver = createdNewConv;
 
             // 1. Insert User Message
             ChatMessage userMsg = new ChatMessage(promptText, true, System.currentTimeMillis(), "User");
-            userMsg.setConversationId(currentConversationId);
-            if (imageUriStr != null) userMsg.setImageUri(imageUriStr);
+            userMsg.setConversationId(targetConvId);
+            if (persistedImageUri != null) userMsg.setImageUri(persistedImageUri);
             db.chatDao().insert(userMsg);
 
             // 2. Check Natural Language Actions (only if no image attached)
-            if (imageUriStr == null) {
-                NaturalLanguageActionParser.ActionResult actionResult = NaturalLanguageActionParser.parseAndExecute(requireContext(), input);
+            if (persistedImageUri == null) {
+                NaturalLanguageActionParser.ActionResult actionResult = NaturalLanguageActionParser.parseAndExecute(appContext, input);
 
                 if (actionResult.type != NaturalLanguageActionParser.ActionType.NONE && actionResult.isSuccess) {
                     ChatMessage assistantMsg = new ChatMessage(
@@ -288,14 +397,25 @@ public class ChatFragment extends Fragment {
                             System.currentTimeMillis(),
                             prefManager.getActiveModelName()
                     );
-                    assistantMsg.setConversationId(currentConversationId);
+                    assistantMsg.setConversationId(targetConvId);
                     assistantMsg.setHasAction(true);
                     assistantMsg.setActionType(actionResult.type.name());
                     assistantMsg.setActionTitle(actionResult.title);
 
                     db.chatDao().insert(assistantMsg);
 
-                    if (prefManager.isVoiceAutoSpeakEnabled()) {
+                    if (shouldAttachObserver) {
+                        Activity act = getActivity();
+                        if (isAdded() && act != null && !act.isFinishing() && !act.isDestroyed()) {
+                            act.runOnUiThread(() -> {
+                                if (isAdded() && getView() != null) {
+                                    loadConversation(targetConvId);
+                                }
+                            });
+                        }
+                    }
+
+                    if (prefManager.isVoiceAutoSpeakEnabled() && voiceHelper != null) {
                         voiceHelper.speak(actionResult.confirmationMessage);
                     }
                     return;
@@ -305,46 +425,69 @@ public class ChatFragment extends Fragment {
             // 3. Regular AI Query via Multi-Provider Streaming (with vision if image attached)
             String activeModelName = prefManager.getActiveModelName();
             ChatMessage pendingMsg = new ChatMessage("Thinking...", false, System.currentTimeMillis(), activeModelName);
-            pendingMsg.setConversationId(currentConversationId);
+            pendingMsg.setConversationId(targetConvId);
+            activeStreamingMsg = pendingMsg;
+            activeStreamingConvId = targetConvId;
 
-            if (isAdded()) {
-                requireActivity().runOnUiThread(() -> {
-                    chatAdapter.appendMessage(pendingMsg);
-                    recyclerChat.scrollToPosition(chatAdapter.getItemCount() - 1);
+            Activity act = getActivity();
+            if (isAdded() && act != null && !act.isFinishing() && !act.isDestroyed()) {
+                act.runOnUiThread(() -> {
+                    if (!isAdded() || getView() == null) return;
+                    setStreamingUiState(true);
+                    if (shouldAttachObserver) {
+                        loadConversation(targetConvId);
+                    } else if (currentConversationId == targetConvId) {
+                        chatAdapter.appendMessage(pendingMsg);
+                        safeScrollToBottom();
+                    }
                 });
             }
 
-            aiService.generateResponse(currentHistory, promptText, imageUriStr, new AiService.StreamCallback() {
+            activeStreamHandle = aiService.generateResponse(historySnapshot, promptText, persistedImageUri, new AiService.StreamCallback() {
                 @Override public void onStart() {}
 
                 @Override
                 public void onToken(String token, String fullTextSoFar) {
-                    if (isAdded()) {
+                    if (!isAdded() || getView() == null) return;
+                    if (currentConversationId == targetConvId) {
+                        pendingMsg.setText(fullTextSoFar);
                         chatAdapter.updateLastMessage(fullTextSoFar);
-                        recyclerChat.scrollToPosition(chatAdapter.getItemCount() - 1);
+                        safeScrollToBottom();
                     }
                 }
 
                 @Override
                 public void onComplete(String fullResponse) {
-                    if (isAdded()) {
-                        chatAdapter.updateLastMessage(fullResponse);
+                    activeStreamHandle = null;
+                    activeStreamingMsg = null;
+                    activeStreamingConvId = -1;
+                    if (isAdded() && getView() != null) {
+                        setStreamingUiState(false);
+                        if (currentConversationId == targetConvId) {
+                            chatAdapter.updateLastMessage(fullResponse);
+                        }
                     }
                     pendingMsg.setText(fullResponse);
                     AppExecutors.getInstance().diskIO().execute(() -> {
                         db.chatDao().insert(pendingMsg);
                     });
 
-                    if (prefManager.isVoiceAutoSpeakEnabled()) {
+                    if (prefManager.isVoiceAutoSpeakEnabled() && voiceHelper != null) {
                         voiceHelper.speak(fullResponse);
                     }
                 }
 
                 @Override
                 public void onError(String errorMessage) {
+                    activeStreamHandle = null;
+                    activeStreamingMsg = null;
+                    activeStreamingConvId = -1;
                     String errorNotice = "⚠️ " + errorMessage;
-                    if (isAdded()) {
-                        chatAdapter.updateLastMessage(errorNotice);
+                    if (isAdded() && getView() != null) {
+                        setStreamingUiState(false);
+                        if (currentConversationId == targetConvId) {
+                            chatAdapter.updateLastMessage(errorNotice);
+                        }
                     }
                     pendingMsg.setText(errorNotice);
                     AppExecutors.getInstance().diskIO().execute(() -> {
@@ -353,6 +496,18 @@ public class ChatFragment extends Fragment {
                 }
             });
         });
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        stopActiveStream();
+        if (currentMessagesLiveData != null) {
+            try {
+                currentMessagesLiveData.removeObservers(getViewLifecycleOwner());
+            } catch (Exception ignored) {}
+            currentMessagesLiveData = null;
+        }
     }
 
     @Override

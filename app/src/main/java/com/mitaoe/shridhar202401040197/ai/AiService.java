@@ -8,6 +8,7 @@ import android.os.Looper;
 import com.mitaoe.shridhar202401040197.data.model.AiModel;
 import com.mitaoe.shridhar202401040197.data.model.ChatMessage;
 import com.mitaoe.shridhar202401040197.data.preference.PreferenceManager;
+import com.mitaoe.shridhar202401040197.util.AppExecutors;
 import com.mitaoe.shridhar202401040197.util.ImageUtil;
 
 import org.json.JSONArray;
@@ -17,8 +18,6 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import okhttp3.MediaType;
@@ -42,42 +41,75 @@ public class AiService {
         void onError(String error);
     }
 
+    public static class RequestHandle {
+        private final java.util.concurrent.atomic.AtomicBoolean cancelled = new java.util.concurrent.atomic.AtomicBoolean(false);
+        private volatile okhttp3.Call activeCall;
+
+        public void bindCall(okhttp3.Call call) {
+            this.activeCall = call;
+            if (cancelled.get() && call != null) {
+                call.cancel();
+            }
+        }
+
+        public void cancel() {
+            cancelled.set(true);
+            okhttp3.Call c = activeCall;
+            if (c != null) {
+                c.cancel();
+            }
+        }
+
+        public boolean isCancelled() {
+            return cancelled.get();
+        }
+    }
+
     private static final MediaType JSON_MEDIA = MediaType.get("application/json; charset=utf-8");
+    private static final OkHttpClient SHARED_CLIENT = new OkHttpClient.Builder()
+            .connectTimeout(30, TimeUnit.SECONDS)
+            .readTimeout(60, TimeUnit.SECONDS)
+            .writeTimeout(30, TimeUnit.SECONDS)
+            .build();
+
     private final Context context;
     private final PreferenceManager prefManager;
-    private final OkHttpClient client;
+    private final OkHttpClient client = SHARED_CLIENT;
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
-    private final ExecutorService executor = Executors.newFixedThreadPool(4);
 
     public AiService(Context context) {
         this.context = context.getApplicationContext();
         this.prefManager = new PreferenceManager(context);
-        this.client = new OkHttpClient.Builder()
-                .connectTimeout(30, TimeUnit.SECONDS)
-                .readTimeout(60, TimeUnit.SECONDS)
-                .writeTimeout(30, TimeUnit.SECONDS)
-                .build();
     }
 
-    public void generateResponse(List<ChatMessage> conversationHistory, String userPrompt, StreamCallback callback) {
-        generateResponse(conversationHistory, userPrompt, null, callback);
+    public RequestHandle generateResponse(List<ChatMessage> conversationHistory, String userPrompt, StreamCallback callback) {
+        return generateResponse(conversationHistory, userPrompt, null, callback);
     }
 
-    public void generateResponse(List<ChatMessage> conversationHistory, String userPrompt, String imageUriStr, StreamCallback callback) {
-        mainHandler.post(callback::onStart);
+    public RequestHandle generateResponse(List<ChatMessage> conversationHistory, String userPrompt, String imageUriStr, StreamCallback callback) {
+        final RequestHandle handle = new RequestHandle();
+        mainHandler.post(() -> {
+            if (!handle.isCancelled()) callback.onStart();
+        });
 
-        executor.execute(() -> {
+        AppExecutors.getInstance().networkIO().execute(() -> {
+            if (handle.isCancelled()) return;
+
             String provider = prefManager.getActiveProvider();
             String modelId = prefManager.getActiveModelId();
 
             if (provider == null || provider.isEmpty() || modelId == null || modelId.isEmpty()) {
-                mainHandler.post(() -> callback.onError("No AI model selected. Please open Settings ⚙️ to configure your API key and pin models."));
+                mainHandler.post(() -> {
+                    if (!handle.isCancelled()) callback.onError("No AI model selected. Please open Settings to configure your API key and pin models.");
+                });
                 return;
             }
 
             String apiKey = prefManager.getApiKey(provider);
             if (apiKey.isEmpty() && !"custom".equalsIgnoreCase(provider)) {
-                mainHandler.post(() -> callback.onError("No API key configured for " + provider.toUpperCase() + ".\nPlease open Settings ⚙️ to enter your key."));
+                mainHandler.post(() -> {
+                    if (!handle.isCancelled()) callback.onError("No API key configured for " + provider.toUpperCase() + ".\nPlease open Settings to enter your key.");
+                });
                 return;
             }
 
@@ -89,19 +121,23 @@ public class AiService {
                     e.printStackTrace();
                 }
             }
+            if (handle.isCancelled()) return;
 
             try {
                 if ("anthropic".equalsIgnoreCase(provider)) {
-                    sendAnthropicRequest(apiKey, modelId, conversationHistory, userPrompt, encodedImage, callback);
+                    sendAnthropicRequest(apiKey, modelId, conversationHistory, userPrompt, encodedImage, handle, callback);
                 } else if ("gemini".equalsIgnoreCase(provider)) {
-                    sendGeminiNativeRequest(apiKey, modelId, conversationHistory, userPrompt, encodedImage, callback);
+                    sendGeminiNativeRequest(apiKey, modelId, conversationHistory, userPrompt, encodedImage, handle, callback);
                 } else {
-                    sendOpenAiCompatibleRequest(provider, apiKey, modelId, conversationHistory, userPrompt, encodedImage, callback);
+                    sendOpenAiCompatibleRequest(provider, apiKey, modelId, conversationHistory, userPrompt, encodedImage, handle, callback);
                 }
             } catch (Exception e) {
-                mainHandler.post(() -> callback.onError("Network error: " + e.getMessage()));
+                if (!handle.isCancelled()) {
+                    mainHandler.post(() -> callback.onError("Network error: " + e.getMessage()));
+                }
             }
         });
+        return handle;
     }
 
     private String getEndpointForProvider(String provider) {
@@ -115,6 +151,9 @@ public class AiService {
             case "gemini": return "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions";
             case "custom":
                 String customUrl = prefManager.getCustomBaseUrl();
+                if (customUrl == null) return "";
+                customUrl = customUrl.trim();
+                if (!customUrl.startsWith("http://") && !customUrl.startsWith("https://")) return "";
                 if (!customUrl.endsWith("/")) customUrl += "/";
                 return customUrl + "chat/completions";
             default: return "https://openrouter.ai/api/v1/chat/completions";
@@ -122,8 +161,17 @@ public class AiService {
     }
 
     private void sendOpenAiCompatibleRequest(String provider, String apiKey, String modelId,
-                                            List<ChatMessage> history, String userPrompt, 
-                                            ImageUtil.EncodedImage encodedImage, StreamCallback callback) {
+                                            List<ChatMessage> history, String userPrompt,
+                                            ImageUtil.EncodedImage encodedImage, RequestHandle handle, StreamCallback callback) {
+        String endpoint = getEndpointForProvider(provider);
+        if (endpoint.isEmpty()) {
+            mainHandler.post(() -> {
+                if (!handle.isCancelled()) {
+                    callback.onError("Invalid custom base URL. Set a valid http:// or https:// URL in Settings.");
+                }
+            });
+            return;
+        }
         try {
             JSONObject body = new JSONObject();
             body.put("model", modelId);
@@ -174,7 +222,7 @@ public class AiService {
             body.put("messages", messages);
 
             Request.Builder reqBuilder = new Request.Builder()
-                    .url(getEndpointForProvider(provider))
+                    .url(endpoint)
                     .post(RequestBody.create(body.toString(), JSON_MEDIA))
                     .addHeader("Content-Type", "application/json");
 
@@ -187,59 +235,86 @@ public class AiService {
                 reqBuilder.addHeader("X-Title", "AI Personal Assistant");
             }
 
-            Response response = client.newCall(reqBuilder.build()).execute();
-            if (!response.isSuccessful()) {
-                String errBody = response.body() != null ? response.body().string() : "Error " + response.code();
-                mainHandler.post(() -> callback.onError(provider.toUpperCase() + " error (" + response.code() + "): " + errBody));
-                return;
-            }
+            okhttp3.Call call = client.newCall(reqBuilder.build());
+            handle.bindCall(call);
+            try (Response response = call.execute()) {
+                if (!response.isSuccessful()) {
+                    String errBody = response.body() != null ? response.body().string() : "Error " + response.code();
+                    if (!handle.isCancelled()) {
+                        mainHandler.post(() -> callback.onError(provider.toUpperCase() + " error (" + response.code() + "): " + errBody));
+                    }
+                    return;
+                }
 
-            ResponseBody responseBody = response.body();
-            if (responseBody == null) {
-                mainHandler.post(() -> callback.onError("Empty response from AI server."));
-                return;
-            }
+                ResponseBody responseBody = response.body();
+                if (responseBody == null) {
+                    if (!handle.isCancelled()) {
+                        mainHandler.post(() -> callback.onError("Empty response from AI server."));
+                    }
+                    return;
+                }
 
-            BufferedReader reader = new BufferedReader(new InputStreamReader(responseBody.byteStream()));
-            StringBuilder fullText = new StringBuilder();
-            String line;
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(responseBody.byteStream()))) {
+                    StringBuilder fullText = new StringBuilder();
+                    String line;
+                    long lastDispatchMs = 0L;
 
-            while ((line = reader.readLine()) != null) {
-                line = line.trim();
-                if (line.isEmpty() || line.startsWith(":")) continue;
+                    while (!handle.isCancelled() && (line = reader.readLine()) != null) {
+                        line = line.trim();
+                        if (line.isEmpty() || line.startsWith(":")) continue;
 
-                if (line.startsWith("data:")) {
-                    String data = line.substring(5).trim();
-                    if ("[DONE]".equalsIgnoreCase(data)) break;
+                        if (line.startsWith("data:")) {
+                            String data = line.substring(5).trim();
+                            if ("[DONE]".equalsIgnoreCase(data)) break;
 
-                    try {
-                        JSONObject json = new JSONObject(data);
-                        JSONArray choices = json.optJSONArray("choices");
-                        if (choices != null && choices.length() > 0) {
-                            JSONObject choice = choices.getJSONObject(0);
-                            JSONObject delta = choice.optJSONObject("delta");
-                            if (delta != null && delta.has("content")) {
-                                String token = delta.getString("content");
-                                fullText.append(token);
-                                String current = fullText.toString();
-                                mainHandler.post(() -> callback.onToken(token, current));
-                            }
+                            try {
+                                JSONObject json = new JSONObject(data);
+                                JSONArray choices = json.optJSONArray("choices");
+                                if (choices != null && choices.length() > 0) {
+                                    JSONObject choice = choices.getJSONObject(0);
+                                    JSONObject delta = choice.optJSONObject("delta");
+                                    if (delta != null && !delta.isNull("content")) {
+                                        String token = delta.optString("content", "");
+                                        if (!token.isEmpty()) {
+                                            fullText.append(token);
+                                            long now = android.os.SystemClock.uptimeMillis();
+                                            if (now - lastDispatchMs >= 45L) {
+                                                lastDispatchMs = now;
+                                                final String current = fullText.toString();
+                                                mainHandler.post(() -> {
+                                                    if (!handle.isCancelled()) callback.onToken(token, current);
+                                                });
+                                            }
+                                        }
+                                    }
+                                }
+                            } catch (Exception ignored) {}
                         }
-                    } catch (Exception ignored) {}
+                    }
+
+                    if (handle.isCancelled()) {
+                        return;
+                    }
+
+                    String finalResult = fullText.toString();
+                    if (finalResult.trim().isEmpty()) {
+                        mainHandler.post(() -> callback.onError("The model returned an empty response. Try again or switch models."));
+                    } else {
+                        mainHandler.post(() -> callback.onComplete(finalResult));
+                    }
                 }
             }
 
-            String finalResult = fullText.toString();
-            mainHandler.post(() -> callback.onComplete(finalResult));
-
         } catch (Exception e) {
-            mainHandler.post(() -> callback.onError("Request error: " + e.getMessage()));
+            if (!handle.isCancelled()) {
+                mainHandler.post(() -> callback.onError("Request error: " + e.getMessage()));
+            }
         }
     }
 
     private void sendAnthropicRequest(String apiKey, String modelId,
-                                      List<ChatMessage> history, String userPrompt, 
-                                      ImageUtil.EncodedImage encodedImage, StreamCallback callback) {
+                                      List<ChatMessage> history, String userPrompt,
+                                      ImageUtil.EncodedImage encodedImage, RequestHandle handle, StreamCallback callback) {
         try {
             JSONObject body = new JSONObject();
             body.put("model", modelId);
@@ -291,38 +366,66 @@ public class AiService {
                     .addHeader("content-type", "application/json")
                     .build();
 
-            Response response = client.newCall(request).execute();
-            if (!response.isSuccessful()) {
-                String err = response.body() != null ? response.body().string() : "Error " + response.code();
-                mainHandler.post(() -> callback.onError("Anthropic error (" + response.code() + "): " + err));
-                return;
-            }
+            okhttp3.Call call = client.newCall(request);
+            handle.bindCall(call);
+            try (Response response = call.execute()) {
+                if (!response.isSuccessful()) {
+                    String err = response.body() != null ? response.body().string() : "Error " + response.code();
+                    if (!handle.isCancelled()) {
+                        mainHandler.post(() -> callback.onError("Anthropic error (" + response.code() + "): " + err));
+                    }
+                    return;
+                }
 
-            String responseString = response.body() != null ? response.body().string() : "";
-            JSONObject resJson = new JSONObject(responseString);
-            JSONArray content = resJson.optJSONArray("content");
-            if (content != null && content.length() > 0) {
-                String reply = content.getJSONObject(0).optString("text", "");
-                simulateTypewriter(reply, callback);
-            } else {
-                mainHandler.post(() -> callback.onError("No response text from Anthropic."));
+                String responseString = response.body() != null ? response.body().string() : "";
+                JSONObject resJson = new JSONObject(responseString);
+                JSONArray content = resJson.optJSONArray("content");
+                if (content != null && content.length() > 0) {
+                    String reply = content.getJSONObject(0).optString("text", "");
+                    if (reply.trim().isEmpty()) {
+                        if (!handle.isCancelled()) mainHandler.post(() -> callback.onError("Anthropic returned an empty message."));
+                    } else {
+                        simulateTypewriter(reply, handle, callback);
+                    }
+                } else if (!handle.isCancelled()) {
+                    mainHandler.post(() -> callback.onError("No response text from Anthropic."));
+                }
             }
 
         } catch (Exception e) {
-            mainHandler.post(() -> callback.onError("Anthropic error: " + e.getMessage()));
+            if (!handle.isCancelled()) {
+                mainHandler.post(() -> callback.onError("Anthropic error: " + e.getMessage()));
+            }
         }
     }
 
     private void sendGeminiNativeRequest(String apiKey, String modelId,
-                                        List<ChatMessage> history, String userPrompt, 
-                                        ImageUtil.EncodedImage encodedImage, StreamCallback callback) {
+                                        List<ChatMessage> history, String userPrompt,
+                                        ImageUtil.EncodedImage encodedImage, RequestHandle handle, StreamCallback callback) {
         try {
             String cleanModel = modelId.startsWith("models/") ? modelId.substring(7) : modelId;
-            String url = "https://generativelanguage.googleapis.com/v1beta/models/" + cleanModel + ":generateContent?key=" + apiKey;
+            String url = "https://generativelanguage.googleapis.com/v1beta/models/" + cleanModel + ":generateContent";
 
             JSONObject root = new JSONObject();
             JSONArray contents = new JSONArray();
 
+            // Inject multi-turn conversation history turns
+            if (history != null) {
+                int start = Math.max(0, history.size() - 8);
+                for (int i = start; i < history.size(); i++) {
+                    ChatMessage msg = history.get(i);
+                    JSONObject turnObj = new JSONObject();
+                    turnObj.put("role", msg.isUser() ? "user" : "model");
+                    JSONArray turnParts = new JSONArray();
+                    JSONObject turnTextPart = new JSONObject();
+                    turnTextPart.put("text", msg.getText() != null ? msg.getText() : "");
+                    turnParts.put(turnTextPart);
+                    turnObj.put("parts", turnParts);
+                    contents.put(turnObj);
+                }
+            }
+
+            // Current prompt turn
             JSONArray partsArray = new JSONArray();
             if (encodedImage != null) {
                 JSONObject imgPart = new JSONObject();
@@ -355,57 +458,88 @@ public class AiService {
                 root.put("system_instruction", sysObj);
             }
 
-            Request request = new Request.Builder()
+            Request.Builder reqBuilder = new Request.Builder()
                     .url(url)
-                    .post(RequestBody.create(root.toString(), JSON_MEDIA))
-                    .build();
+                    .post(RequestBody.create(root.toString(), JSON_MEDIA));
 
-            Response response = client.newCall(request).execute();
-            if (!response.isSuccessful()) {
-                String err = response.body() != null ? response.body().string() : "Error " + response.code();
-                mainHandler.post(() -> callback.onError("Gemini API Error (" + response.code() + "): " + err));
-                return;
+            if (apiKey != null && !apiKey.isEmpty()) {
+                reqBuilder.addHeader("x-goog-api-key", apiKey);
             }
 
-            String responseString = response.body() != null ? response.body().string() : "";
-            JSONObject resJson = new JSONObject(responseString);
-            JSONArray candidates = resJson.optJSONArray("candidates");
-            if (candidates != null && candidates.length() > 0) {
-                JSONObject first = candidates.getJSONObject(0);
-                JSONObject content = first.getJSONObject("content");
-                JSONArray parts = content.getJSONArray("parts");
-                String reply = parts.getJSONObject(0).getString("text");
+            okhttp3.Call call = client.newCall(reqBuilder.build());
+            handle.bindCall(call);
+            try (Response response = call.execute()) {
+                if (!response.isSuccessful()) {
+                    String err = response.body() != null ? response.body().string() : "Error " + response.code();
+                    if (!handle.isCancelled()) {
+                        mainHandler.post(() -> callback.onError("Gemini API Error (" + response.code() + "): " + err));
+                    }
+                    return;
+                }
 
-                simulateTypewriter(reply, callback);
-            } else {
-                mainHandler.post(() -> callback.onError("No candidates returned by Gemini."));
+                String responseString = response.body() != null ? response.body().string() : "";
+                JSONObject resJson = new JSONObject(responseString);
+                JSONArray candidates = resJson.optJSONArray("candidates");
+                if (candidates != null && candidates.length() > 0) {
+                    JSONObject first = candidates.optJSONObject(0);
+                    JSONObject content = first != null ? first.optJSONObject("content") : null;
+                    JSONArray parts = content != null ? content.optJSONArray("parts") : null;
+                    String reply = (parts != null && parts.length() > 0 && parts.optJSONObject(0) != null)
+                            ? parts.optJSONObject(0).optString("text", "")
+                            : "";
+
+                    if (!reply.isEmpty()) {
+                        simulateTypewriter(reply, handle, callback);
+                    } else if (!handle.isCancelled()) {
+                        String reason = first != null ? first.optString("finishReason", "UNKNOWN") : "UNKNOWN";
+                        mainHandler.post(() -> callback.onError("Gemini did not return text (reason: " + reason + ")."));
+                    }
+                } else if (!handle.isCancelled()) {
+                    mainHandler.post(() -> callback.onError("No candidates returned by Gemini."));
+                }
             }
 
         } catch (Exception e) {
-            mainHandler.post(() -> callback.onError("Gemini Error: " + e.getMessage()));
+            if (!handle.isCancelled()) {
+                mainHandler.post(() -> callback.onError("Gemini Error: " + e.getMessage()));
+            }
         }
     }
 
-    private void simulateTypewriter(String text, StreamCallback callback) {
+    private void simulateTypewriter(String text, RequestHandle handle, StreamCallback callback) {
         String[] words = text.split(" ");
         StringBuilder current = new StringBuilder();
+        int chunkSize = 3;
 
-        for (int i = 0; i < words.length; i++) {
-            current.append(words[i]).append(" ");
-            final String token = words[i] + " ";
+        for (int i = 0; i < words.length; i += chunkSize) {
+            if (handle.isCancelled()) return;
+            StringBuilder chunk = new StringBuilder();
+            for (int j = i; j < Math.min(words.length, i + chunkSize); j++) {
+                chunk.append(words[j]).append(" ");
+            }
+            String token = chunk.toString();
+            current.append(token);
             final String textSoFar = current.toString();
-            mainHandler.post(() -> callback.onToken(token, textSoFar));
+            mainHandler.post(() -> {
+                if (!handle.isCancelled()) callback.onToken(token, textSoFar);
+            });
             try {
-                Thread.sleep(20);
-            } catch (InterruptedException ignored) {}
+                Thread.sleep(35);
+            } catch (InterruptedException ignored) {
+                return;
+            }
         }
 
-        final String finalResult = current.toString().trim();
-        mainHandler.post(() -> callback.onComplete(finalResult));
+        if (!handle.isCancelled()) {
+            final String finalResult = current.toString().trim();
+            mainHandler.post(() -> {
+                if (!handle.isCancelled()) callback.onComplete(finalResult);
+            });
+        }
     }
 
     public void fetchAvailableModels(String provider, String apiKey, ModelFetchCallback callback) {
-        executor.execute(() -> {
+        AppExecutors.getInstance().networkIO().execute(() -> {
             try {
                 String pKey = provider.toLowerCase();
                 List<AiModel> result = new ArrayList<>();
@@ -415,27 +549,28 @@ public class AiService {
                     Request.Builder rb = new Request.Builder().url(url).get();
                     if (!apiKey.isEmpty()) rb.addHeader("Authorization", "Bearer " + apiKey);
 
-                    Response response = client.newCall(rb.build()).execute();
-                    if (!response.isSuccessful()) {
-                        mainHandler.post(() -> callback.onError("OpenRouter fetch error (" + response.code() + ")"));
-                        return;
-                    }
-                    String json = response.body() != null ? response.body().string() : "";
-                    JSONObject obj = new JSONObject(json);
-                    JSONArray data = obj.optJSONArray("data");
-                    if (data != null) {
-                        for (int i = 0; i < data.length(); i++) {
-                            JSONObject m = data.getJSONObject(i);
-                            String id = m.getString("id");
-                            String name = m.optString("name", id);
-                            JSONObject pricing = m.optJSONObject("pricing");
-                            boolean isFree = id.contains(":free") || id.toLowerCase().contains("free");
-                            if (pricing != null) {
-                                String promptCost = pricing.optString("prompt", "1");
-                                if ("0".equals(promptCost) || "0.0".equals(promptCost)) isFree = true;
+                    try (Response response = client.newCall(rb.build()).execute()) {
+                        if (!response.isSuccessful()) {
+                            mainHandler.post(() -> callback.onError("OpenRouter fetch error (" + response.code() + ")"));
+                            return;
+                        }
+                        String json = response.body() != null ? response.body().string() : "";
+                        JSONObject obj = new JSONObject(json);
+                        JSONArray data = obj.optJSONArray("data");
+                        if (data != null) {
+                            for (int i = 0; i < data.length(); i++) {
+                                JSONObject m = data.getJSONObject(i);
+                                String id = m.getString("id");
+                                String name = m.optString("name", id);
+                                JSONObject pricing = m.optJSONObject("pricing");
+                                boolean isFree = id.contains(":free") || id.toLowerCase().contains("free");
+                                if (pricing != null) {
+                                    String promptCost = pricing.optString("prompt", "1");
+                                    if ("0".equals(promptCost) || "0.0".equals(promptCost)) isFree = true;
+                                }
+                                String desc = isFree ? "Free OpenRouter Model" : "OpenRouter Cloud";
+                                result.add(new AiModel(id, name, "openrouter", isFree, false, desc));
                             }
-                            String desc = isFree ? "Free OpenRouter Model" : "OpenRouter Cloud";
-                            result.add(new AiModel(id, name, "openrouter", isFree, false, desc));
                         }
                     }
                 } else if ("groq".equals(pKey)) {
@@ -446,54 +581,59 @@ public class AiService {
                             .addHeader("Authorization", "Bearer " + apiKey)
                             .build();
 
-                    Response response = client.newCall(request).execute();
-                    if (!response.isSuccessful()) {
-                        mainHandler.post(() -> callback.onError("Groq fetch error (" + response.code() + ")"));
-                        return;
-                    }
-                    String json = response.body() != null ? response.body().string() : "";
-                    JSONObject obj = new JSONObject(json);
-                    JSONArray data = obj.optJSONArray("data");
-                    if (data != null) {
-                        for (int i = 0; i < data.length(); i++) {
-                            JSONObject m = data.getJSONObject(i);
-                            String id = m.getString("id");
-                            result.add(new AiModel(id, id, "groq", true, false, "Ultra-fast Groq LPU"));
+                    try (Response response = client.newCall(request).execute()) {
+                        if (!response.isSuccessful()) {
+                            mainHandler.post(() -> callback.onError("Groq fetch error (" + response.code() + ")"));
+                            return;
+                        }
+                        String json = response.body() != null ? response.body().string() : "";
+                        JSONObject obj = new JSONObject(json);
+                        JSONArray data = obj.optJSONArray("data");
+                        if (data != null) {
+                            for (int i = 0; i < data.length(); i++) {
+                                JSONObject m = data.getJSONObject(i);
+                                String id = m.getString("id");
+                                result.add(new AiModel(id, id, "groq", true, false, "Ultra-fast Groq LPU"));
+                            }
                         }
                     }
                 } else if ("gemini".equals(pKey)) {
-                    String url = "https://generativelanguage.googleapis.com/v1beta/models?key=" + apiKey;
-                    Request request = new Request.Builder().url(url).get().build();
-
-                    Response response = client.newCall(request).execute();
-                    if (!response.isSuccessful()) {
-                        mainHandler.post(() -> callback.onError("Gemini fetch error (" + response.code() + ")"));
-                        return;
+                    String url = "https://generativelanguage.googleapis.com/v1beta/models";
+                    Request.Builder reqBuilder = new Request.Builder().url(url).get();
+                    if (apiKey != null && !apiKey.isEmpty()) {
+                        reqBuilder.addHeader("x-goog-api-key", apiKey);
                     }
-                    String json = response.body() != null ? response.body().string() : "";
-                    JSONObject obj = new JSONObject(json);
-                    JSONArray models = obj.optJSONArray("models");
-                    if (models != null) {
-                        for (int i = 0; i < models.length(); i++) {
-                            JSONObject m = models.getJSONObject(i);
-                            String rawName = m.getString("name");
-                            String id = rawName.startsWith("models/") ? rawName.substring(7) : rawName;
-                            String dispName = m.optString("displayName", id);
-                            String desc = m.optString("description", "Google AI Model");
-                            // Filter only generateContent models
-                            JSONArray methods = m.optJSONArray("supportedGenerationMethods");
-                            boolean canGen = false;
-                            if (methods != null) {
-                                for (int j = 0; j < methods.length(); j++) {
-                                    if ("generateContent".equalsIgnoreCase(methods.getString(j))) {
-                                        canGen = true;
-                                        break;
+
+                    try (Response response = client.newCall(reqBuilder.build()).execute()) {
+                        if (!response.isSuccessful()) {
+                            mainHandler.post(() -> callback.onError("Gemini fetch error (" + response.code() + ")"));
+                            return;
+                        }
+                        String json = response.body() != null ? response.body().string() : "";
+                        JSONObject obj = new JSONObject(json);
+                        JSONArray models = obj.optJSONArray("models");
+                        if (models != null) {
+                            for (int i = 0; i < models.length(); i++) {
+                                JSONObject m = models.getJSONObject(i);
+                                String rawName = m.getString("name");
+                                String id = rawName.startsWith("models/") ? rawName.substring(7) : rawName;
+                                String dispName = m.optString("displayName", id);
+                                String desc = m.optString("description", "Google AI Model");
+                                // Filter only generateContent models
+                                JSONArray methods = m.optJSONArray("supportedGenerationMethods");
+                                boolean canGen = false;
+                                if (methods != null) {
+                                    for (int j = 0; j < methods.length(); j++) {
+                                        if ("generateContent".equalsIgnoreCase(methods.getString(j))) {
+                                            canGen = true;
+                                            break;
+                                        }
                                     }
                                 }
-                            }
-                            if (canGen) {
-                                boolean isFree = id.contains("flash") || id.contains("exp");
-                                result.add(new AiModel(id, dispName, "gemini", isFree, false, desc));
+                                if (canGen) {
+                                    boolean isFree = id.contains("flash") || id.contains("exp");
+                                    result.add(new AiModel(id, dispName, "gemini", isFree, false, desc));
+                                }
                             }
                         }
                     }
@@ -505,22 +645,23 @@ public class AiService {
                             .addHeader("Authorization", "Bearer " + apiKey)
                             .build();
 
-                    Response response = client.newCall(request).execute();
-                    if (response.isSuccessful()) {
-                        String json = response.body() != null ? response.body().string() : "";
-                        JSONObject obj = new JSONObject(json);
-                        JSONArray data = obj.optJSONArray("data");
-                        if (data != null && data.length() > 0) {
-                            for (int i = 0; i < data.length(); i++) {
-                                JSONObject m = data.getJSONObject(i);
-                                String id = m.getString("id");
-                                result.add(new AiModel(id, id.equalsIgnoreCase("deepseek-chat") ? "DeepSeek V3 (Chat)" : (id.equalsIgnoreCase("deepseek-reasoner") ? "DeepSeek R1 (Reasoner)" : id), "deepseek", false, false, "DeepSeek Intelligence"));
+                    try (Response response = client.newCall(request).execute()) {
+                        if (response.isSuccessful()) {
+                            String json = response.body() != null ? response.body().string() : "";
+                            JSONObject obj = new JSONObject(json);
+                            JSONArray data = obj.optJSONArray("data");
+                            if (data != null && data.length() > 0) {
+                                for (int i = 0; i < data.length(); i++) {
+                                    JSONObject m = data.getJSONObject(i);
+                                    String id = m.getString("id");
+                                    result.add(new AiModel(id, id.equalsIgnoreCase("deepseek-chat") ? "DeepSeek V3 (Chat)" : (id.equalsIgnoreCase("deepseek-reasoner") ? "DeepSeek R1 (Reasoner)" : id), "deepseek", false, false, "DeepSeek Intelligence"));
+                                }
                             }
+                        } else {
+                            // Fallback flagship models
+                            result.add(new AiModel("deepseek-chat", "DeepSeek V3 (Chat)", "deepseek", false, false, "DeepSeek flagship general model"));
+                            result.add(new AiModel("deepseek-reasoner", "DeepSeek R1 (Reasoner)", "deepseek", false, false, "DeepSeek advanced reasoning model"));
                         }
-                    } else {
-                        // Fallback flagship models
-                        result.add(new AiModel("deepseek-chat", "DeepSeek V3 (Chat)", "deepseek", false, false, "DeepSeek flagship general model"));
-                        result.add(new AiModel("deepseek-reasoner", "DeepSeek R1 (Reasoner)", "deepseek", false, false, "DeepSeek advanced reasoning model"));
                     }
                 } else if ("anthropic".equals(pKey)) {
                     result.add(new AiModel("claude-3-5-sonnet-20241022", "Claude 3.5 Sonnet", "anthropic", false, false, "Flagship Anthropic model"));
@@ -538,19 +679,20 @@ public class AiService {
                             .addHeader("Authorization", "Bearer " + apiKey)
                             .build();
 
-                    Response response = client.newCall(request).execute();
-                    if (!response.isSuccessful()) {
-                        mainHandler.post(() -> callback.onError("Fireworks fetch error (" + response.code() + ")"));
-                        return;
-                    }
-                    String json = response.body() != null ? response.body().string() : "";
-                    JSONObject obj = new JSONObject(json);
-                    JSONArray data = obj.optJSONArray("data");
-                    if (data != null) {
-                        for (int i = 0; i < data.length(); i++) {
-                            JSONObject m = data.getJSONObject(i);
-                            String id = m.getString("id");
-                            result.add(new AiModel(id, id, "fireworks", false, false, "Fireworks Fast Inference"));
+                    try (Response response = client.newCall(request).execute()) {
+                        if (!response.isSuccessful()) {
+                            mainHandler.post(() -> callback.onError("Fireworks fetch error (" + response.code() + ")"));
+                            return;
+                        }
+                        String json = response.body() != null ? response.body().string() : "";
+                        JSONObject obj = new JSONObject(json);
+                        JSONArray data = obj.optJSONArray("data");
+                        if (data != null) {
+                            for (int i = 0; i < data.length(); i++) {
+                                JSONObject m = data.getJSONObject(i);
+                                String id = m.getString("id");
+                                result.add(new AiModel(id, id, "fireworks", false, false, "Fireworks Fast Inference"));
+                            }
                         }
                     }
                 } else if ("openai".equals(pKey)) {
@@ -561,32 +703,11 @@ public class AiService {
                             .addHeader("Authorization", "Bearer " + apiKey)
                             .build();
 
-                    Response response = client.newCall(request).execute();
-                    if (!response.isSuccessful()) {
-                        mainHandler.post(() -> callback.onError("OpenAI fetch error (" + response.code() + ")"));
-                        return;
-                    }
-                    String json = response.body() != null ? response.body().string() : "";
-                    JSONObject obj = new JSONObject(json);
-                    JSONArray data = obj.optJSONArray("data");
-                    if (data != null) {
-                        for (int i = 0; i < data.length(); i++) {
-                            JSONObject m = data.getJSONObject(i);
-                            String id = m.getString("id");
-                            if (id.startsWith("gpt-") || id.startsWith("o1")) {
-                                result.add(new AiModel(id, id, "openai", false, false, "OpenAI ChatGPT model"));
-                            }
+                    try (Response response = client.newCall(request).execute()) {
+                        if (!response.isSuccessful()) {
+                            mainHandler.post(() -> callback.onError("OpenAI fetch error (" + response.code() + ")"));
+                            return;
                         }
-                    }
-                } else if ("custom".equals(pKey)) {
-                    String customUrl = prefManager.getCustomBaseUrl();
-                    if (!customUrl.endsWith("/")) customUrl += "/";
-                    String url = customUrl + "models";
-                    Request.Builder rb = new Request.Builder().url(url).get();
-                    if (!apiKey.isEmpty()) rb.addHeader("Authorization", "Bearer " + apiKey);
-
-                    Response response = client.newCall(rb.build()).execute();
-                    if (response.isSuccessful()) {
                         String json = response.body() != null ? response.body().string() : "";
                         JSONObject obj = new JSONObject(json);
                         JSONArray data = obj.optJSONArray("data");
@@ -594,8 +715,39 @@ public class AiService {
                             for (int i = 0; i < data.length(); i++) {
                                 JSONObject m = data.getJSONObject(i);
                                 String id = m.getString("id");
-                                result.add(new AiModel(id, id, "custom", true, false, "Local / Custom Endpoint"));
+                                if (id.startsWith("gpt-") || id.startsWith("o1")) {
+                                    result.add(new AiModel(id, id, "openai", false, false, "OpenAI ChatGPT model"));
+                                }
                             }
+                        }
+                    }
+                } else if ("custom".equals(pKey)) {
+                    String customUrl = prefManager.getCustomBaseUrl();
+                    if (customUrl == null || (!customUrl.trim().startsWith("http://") && !customUrl.trim().startsWith("https://"))) {
+                        mainHandler.post(() -> callback.onError("Invalid custom base URL."));
+                        return;
+                    }
+                    customUrl = customUrl.trim();
+                    if (!customUrl.endsWith("/")) customUrl += "/";
+                    String url = customUrl + "models";
+                    Request.Builder rb = new Request.Builder().url(url).get();
+                    if (!apiKey.isEmpty()) rb.addHeader("Authorization", "Bearer " + apiKey);
+
+                    try (Response response = client.newCall(rb.build()).execute()) {
+                        if (response.isSuccessful()) {
+                            String json = response.body() != null ? response.body().string() : "";
+                            JSONObject obj = new JSONObject(json);
+                            JSONArray data = obj.optJSONArray("data");
+                            if (data != null) {
+                                for (int i = 0; i < data.length(); i++) {
+                                    JSONObject m = data.getJSONObject(i);
+                                    String id = m.getString("id");
+                                    result.add(new AiModel(id, id, "custom", true, false, "Local / Custom Endpoint"));
+                                }
+                            }
+                        } else {
+                            mainHandler.post(() -> callback.onError("Custom endpoint error (" + response.code() + ")"));
+                            return;
                         }
                     }
                 }

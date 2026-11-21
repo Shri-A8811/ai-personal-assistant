@@ -5,7 +5,8 @@
 > **Platform**: Native Android (Android Studio)  
 > **Language**: 100% Modern Java (JDK 17)  
 > **Design Theme**: Obsidian Cybernetic Dark Theme (`#060E20`, `#0B1326`, Electric Cyan `#38BDF8`, Indigo `#6366F1`)  
-> **Status**: Compiled & Verified (`AIPersonalAssistant_v1.0.apk` ready!)
+> **Status**: Compiled & Verified (`AIPersonalAssistant_v1.1_debug.apk` ready!)  
+> **Comprehensive Technical Documentation**: See [`DOCUMENTATION.md`](DOCUMENTATION.md) for full architecture, schema reference, and audit records.
 
 ---
 

@@ -100,4 +100,25 @@ public class DateTimeUtilTest {
         assertEquals(Calendar.MONDAY, cal.get(Calendar.DAY_OF_WEEK));
         assertEquals(10, cal.get(Calendar.HOUR_OF_DAY));
     }
+
+    @Test
+    public void testTonightAtNinePm() {
+        long result = DateTimeUtil.parseNaturalDate("Prepare slides tonight at 9");
+        assertTrue(result > 0);
+
+        Calendar cal = Calendar.getInstance();
+        cal.setTimeInMillis(result);
+        assertEquals(21, cal.get(Calendar.HOUR_OF_DAY)); // 9 PM tonight
+    }
+
+    @Test
+    public void testNonMonthWordLeadsNotInterpretedAsMonth() {
+        // "marketing" should not match "mar" / March
+        long result = DateTimeUtil.parseNaturalDate("Call marketing leads tomorrow at 3pm");
+        assertTrue(result > 0);
+
+        Calendar cal = Calendar.getInstance();
+        cal.setTimeInMillis(result);
+        assertEquals(15, cal.get(Calendar.HOUR_OF_DAY)); // 3 PM
+    }
 }

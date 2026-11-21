@@ -1,5 +1,6 @@
 package com.mitaoe.shridhar202401040197.ui.tasks;
 
+import android.content.Context;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -49,26 +50,26 @@ public class TasksFragment extends Fragment {
         adapter = new TaskAdapter(new TaskAdapter.TaskActionListener() {
             @Override
             public void onToggleComplete(TaskItem task, boolean isCompleted) {
-                AppExecutors.getInstance().diskIO().execute(() -> {
-                    task.setCompleted(isCompleted);
-                    db.taskDao().update(task);
-                    if (isCompleted) {
-                        NotificationHelper.cancelAlarm(requireContext(), task.getId());
-                    }
-                });
+                Context ctx = getContext();
+                if (ctx != null) {
+                    com.mitaoe.shridhar202401040197.util.TaskUtil.toggleTaskCompletion(ctx.getApplicationContext(), task, isCompleted);
+                }
             }
 
             @Override
             public void onDeleteTask(TaskItem task) {
-                new AlertDialog.Builder(requireContext())
+                Context ctx = getContext();
+                if (ctx == null) return;
+                final Context appContext = ctx.getApplicationContext();
+                new AlertDialog.Builder(ctx)
                         .setTitle("Delete Task")
                         .setMessage("Delete \"" + (task.getTitle() != null ? task.getTitle() : "task") + "\"?")
                         .setPositiveButton("Delete", (dialog, which) -> {
                             AppExecutors.getInstance().diskIO().execute(() -> {
                                 db.taskDao().delete(task);
-                                NotificationHelper.cancelAlarm(requireContext(), task.getId());
+                                NotificationHelper.cancelAlarm(appContext, task.getId());
                             });
-                            Toast.makeText(requireContext(), "Task deleted", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(appContext, "Task deleted", Toast.LENGTH_SHORT).show();
                         })
                         .setNegativeButton("Cancel", null)
                         .show();
@@ -76,41 +77,70 @@ public class TasksFragment extends Fragment {
 
             @Override
             public void onEditTask(TaskItem task) {
+                if (!isAdded() || getParentFragmentManager().isStateSaved()) return;
                 TaskDialog.newInstance(task).show(getParentFragmentManager(), "EditTaskDialog");
             }
         });
         recyclerTasks.setAdapter(adapter);
 
         fabAddTask.setOnClickListener(v -> {
+            if (!isAdded() || getParentFragmentManager().isStateSaved()) return;
             TaskDialog.newInstance(null).show(getParentFragmentManager(), "NewTaskDialog");
         });
-
-        chipGroupFilters.setOnCheckedStateChangeListener((group, checkedIds) -> {
-            if (checkedIds.contains(R.id.chipPending)) {
-                observeTasks(db.taskDao().getPendingTasks());
-            } else if (checkedIds.contains(R.id.chipCompleted)) {
-                observeTasks(db.taskDao().getCompletedTasks());
-            } else {
-                observeTasks(db.taskDao().getAllTasks());
-            }
-        });
-
-        // Default: Observe all tasks
-        observeTasks(db.taskDao().getAllTasks());
 
         return view;
     }
 
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+
+        ChipGroup chipGroupFilters = view.findViewById(R.id.chipGroupFilters);
+        if (chipGroupFilters != null) {
+            chipGroupFilters.setOnCheckedStateChangeListener((group, checkedIds) -> {
+                if (checkedIds.contains(R.id.chipPending)) {
+                    observeTasks(db.taskDao().getPendingTasks());
+                } else if (checkedIds.contains(R.id.chipCompleted)) {
+                    observeTasks(db.taskDao().getCompletedTasks());
+                } else {
+                    observeTasks(db.taskDao().getAllTasks());
+                }
+            });
+        }
+
+        // Default: Observe all tasks
+        observeTasks(db.taskDao().getAllTasks());
+    }
+
     private void observeTasks(LiveData<List<TaskItem>> liveData) {
+        if (!isAdded() || getView() == null) return;
         if (currentLiveData != null) {
-            currentLiveData.removeObservers(getViewLifecycleOwner());
+            try {
+                currentLiveData.removeObservers(getViewLifecycleOwner());
+            } catch (Exception ignored) {}
         }
         currentLiveData = liveData;
-        currentLiveData.observe(getViewLifecycleOwner(), tasks -> {
-            if (tasks != null) {
-                adapter.setTasks(tasks);
-                txtEmptyTasks.setVisibility(tasks.isEmpty() ? View.VISIBLE : View.GONE);
-            }
-        });
+        try {
+            currentLiveData.observe(getViewLifecycleOwner(), tasks -> {
+                if (!isAdded() || getView() == null) return;
+                if (tasks != null) {
+                    if (adapter != null) adapter.setTasks(tasks);
+                    if (txtEmptyTasks != null) {
+                        txtEmptyTasks.setVisibility(tasks.isEmpty() ? View.VISIBLE : View.GONE);
+                    }
+                }
+            });
+        } catch (Exception ignored) {}
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        if (currentLiveData != null) {
+            try {
+                currentLiveData.removeObservers(getViewLifecycleOwner());
+            } catch (Exception ignored) {}
+            currentLiveData = null;
+        }
     }
 }

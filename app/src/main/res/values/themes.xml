@@ -3,7 +3,7 @@
     <style name="Theme.AIPersonalAssistant" parent="Theme.Material3.DayNight.NoActionBar">
         <!-- Primary Brand Colors -->
         <item name="colorPrimary">@color/accent_gemini_blue</item>
-        <item name="colorOnPrimary">@color/white</item>
+        <item name="colorOnPrimary">@color/on_electric_cyan</item>
         <item name="colorPrimaryContainer">@color/surface_elevated_dark</item>
         <item name="colorOnPrimaryContainer">@color/text_primary</item>
 
@@ -57,8 +57,17 @@
     </style>
 
     <style name="SubtleActiveIndicator" parent="Widget.Material3.BottomNavigationView.ActiveIndicator">
-        <item name="android:color">#224E80EE</item>
-        <item name="android:width">44dp</item>
-        <item name="android:height">30dp</item>
+        <item name="android:color">#2638BDF8</item>
+        <item name="android:width">56dp</item>
+        <item name="android:height">28dp</item>
+    </style>
+
+    <style name="BottomNavTextActive" parent="TextAppearance.Material3.LabelSmall">
+        <item name="android:textSize">11sp</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <style name="BottomNavTextInactive" parent="TextAppearance.Material3.LabelSmall">
+        <item name="android:textSize">11sp</item>
     </style>
 </resources>

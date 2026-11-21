@@ -50,6 +50,7 @@
         android:layout_height="0dp"
         android:clipToPadding="false"
         android:padding="16dp"
+        android:paddingBottom="88dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -63,7 +64,7 @@
         android:layout_height="wrap_content"
         android:gravity="center"
         android:text="@string/no_tasks"
-        android:textColor="@color/text_muted"
+        android:textColor="@color/text_secondary"
         android:textSize="14sp"
         android:visibility="gone"
         app:layout_constraintBottom_toBottomOf="parent"
@@ -79,9 +80,9 @@
         android:layout_margin="20dp"
         android:backgroundTint="@color/accent_gemini_blue"
         android:text="@string/add_task"
-        android:textColor="@color/white"
+        android:textColor="@color/on_electric_cyan"
         app:icon="@drawable/ic_add"
-        app:iconTint="@color/white"
+        app:iconTint="@color/on_electric_cyan"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 

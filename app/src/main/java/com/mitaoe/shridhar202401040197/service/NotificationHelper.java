@@ -84,9 +84,17 @@ public class NotificationHelper {
                 .addAction(R.drawable.ic_check, "Mark as Done", completePendingIntent)
                 .addAction(R.drawable.ic_time, "Snooze 10m", snoozePendingIntent);
 
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (androidx.core.content.ContextCompat.checkSelfPermission(context, android.Manifest.permission.POST_NOTIFICATIONS) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                return;
+            }
+        }
+
         NotificationManager manager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
         if (manager != null) {
-            manager.notify((int) taskId, builder.build());
+            try {
+                manager.notify((int) taskId, builder.build());
+            } catch (SecurityException ignored) {}
         }
     }
 
@@ -149,10 +157,19 @@ public class NotificationHelper {
 
     public static void requestExactAlarmPermission(Context context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            Intent intent = new Intent(android.provider.Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM);
-            intent.setData(Uri.parse("package:" + context.getPackageName()));
-            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            context.startActivity(intent);
+            try {
+                Intent intent = new Intent(android.provider.Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM);
+                intent.setData(Uri.parse("package:" + context.getPackageName()));
+                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                context.startActivity(intent);
+            } catch (Exception e) {
+                try {
+                    Intent fallback = new Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+                    fallback.setData(Uri.parse("package:" + context.getPackageName()));
+                    fallback.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    context.startActivity(fallback);
+                } catch (Exception ignored) {}
+            }
         }
     }
 }

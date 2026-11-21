@@ -1,5 +1,7 @@
 package com.mitaoe.shridhar202401040197.data.model;
 
+import androidx.annotation.NonNull;
+import androidx.room.ColumnInfo;
 import androidx.room.Entity;
 import androidx.room.PrimaryKey;
 
@@ -18,6 +20,9 @@ public class TaskItem implements Serializable {
     private boolean isCompleted;
     private String category;
     private boolean hasReminder;
+    // Must stay @NonNull with defaultValue to match MIGRATION_3_4:
+    @NonNull
+    @ColumnInfo(defaultValue = "NONE")
     private String recurrence = "NONE"; // NONE, DAILY, WEEKLY
 
     public TaskItem(String title, String description, long dueDateMillis, String priority, String category, boolean hasReminder) {

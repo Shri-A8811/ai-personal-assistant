@@ -17,33 +17,38 @@ public class AlarmReceiver extends BroadcastReceiver {
         String taskTitle = intent.getStringExtra("task_title");
 
         if (taskId != -1) {
+            PendingResult pendingResult = goAsync();
             AppExecutors.getInstance().diskIO().execute(() -> {
-                AppDatabase db = AppDatabase.getInstance(context);
-                TaskItem task = db.taskDao().getTaskById(taskId);
-                if (task != null && !task.isCompleted()) {
-                    NotificationHelper.showReminderNotification(
-                            context,
-                            task.getId(),
-                            task.getTitle(),
-                            task.getDescription()
-                    );
-                    if (task.getRecurrence() != null && !task.getRecurrence().equalsIgnoreCase("NONE")) {
-                        long nextTrigger = task.getDueDateMillis();
-                        long interval = "DAILY".equalsIgnoreCase(task.getRecurrence()) ? (24L * 60 * 60 * 1000) : (7L * 24 * 60 * 60 * 1000);
-                        while (nextTrigger <= System.currentTimeMillis()) {
-                            nextTrigger += interval;
+                try {
+                    AppDatabase db = AppDatabase.getInstance(context);
+                    TaskItem task = db.taskDao().getTaskById(taskId);
+                    if (task != null && !task.isCompleted()) {
+                        NotificationHelper.showReminderNotification(
+                                context,
+                                task.getId(),
+                                task.getTitle(),
+                                task.getDescription()
+                        );
+                        if (task.getRecurrence() != null && !task.getRecurrence().equalsIgnoreCase("NONE")) {
+                            long nextTrigger = com.mitaoe.shridhar202401040197.util.TaskUtil.computeNextRecurrenceTrigger(
+                                    task.getDueDateMillis(),
+                                    task.getRecurrence(),
+                                    System.currentTimeMillis()
+                            );
+                            task.setDueDateMillis(nextTrigger);
+                            db.taskDao().update(task);
+                            NotificationHelper.scheduleAlarm(context, task.getId(), task.getTitle(), nextTrigger);
                         }
-                        task.setDueDateMillis(nextTrigger);
-                        db.taskDao().update(task);
-                        NotificationHelper.scheduleAlarm(context, task.getId(), task.getTitle(), nextTrigger);
+                    } else if (taskTitle != null) {
+                        NotificationHelper.showReminderNotification(
+                                context,
+                                taskId,
+                                taskTitle,
+                                "Reminder Alert"
+                        );
                     }
-                } else if (taskTitle != null) {
-                    NotificationHelper.showReminderNotification(
-                            context,
-                            taskId,
-                            taskTitle,
-                            "Reminder Alert"
-                    );
+                } finally {
+                    pendingResult.finish();
                 }
             });
         }

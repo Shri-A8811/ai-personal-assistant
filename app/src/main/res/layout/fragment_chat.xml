@@ -19,110 +19,141 @@
         app:layout_constraintTop_toTopOf="parent"
         tools:listitem="@layout/item_chat_assistant" />
 
-    <!-- Welcome & Starter Suggestions (when conversation is empty) -->
-    <LinearLayout
+    <!-- Scrollable Welcome & Starter Suggestions (safe on compact/landscape screens) -->
+    <androidx.core.widget.NestedScrollView
         android:id="@+id/layoutWelcome"
-        android:layout_width="match_parent"
+        android:layout_width="0dp"
         android:layout_height="0dp"
-        android:gravity="center"
-        android:orientation="vertical"
-        android:padding="24dp"
+        android:fillViewport="true"
         android:visibility="gone"
         app:layout_constraintBottom_toTopOf="@id/previewContainer"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
 
-        <com.google.android.material.imageview.ShapeableImageView
-            android:layout_width="68dp"
-            android:layout_height="68dp"
-            android:src="@drawable/app_logo"
-            app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Full" />
-
-        <TextView
-            android:id="@+id/txtWelcomeTitle"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:gravity="center"
-            android:text="How can I assist you today?"
-            android:textColor="@color/text_primary"
-            android:textSize="18sp"
-            android:textStyle="bold" />
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:text="Select a prompt or ask anything below:"
-            android:textColor="@color/text_muted"
-            android:textSize="13sp" />
-
-        <!-- 4 Suggestion Cards -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="20dp"
-            android:orientation="vertical">
+            android:gravity="center"
+            android:orientation="vertical"
+            android:padding="24dp">
+
+            <com.google.android.material.imageview.ShapeableImageView
+                android:layout_width="72dp"
+                android:layout_height="72dp"
+                android:contentDescription="AI Assistant Logo"
+                android:src="@drawable/app_logo"
+                app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Full"
+                app:strokeColor="@color/electric_cyan"
+                app:strokeWidth="1.5dp" />
 
             <TextView
-                android:id="@+id/chipSuggest1"
-                android:layout_width="match_parent"
+                android:id="@+id/txtWelcomeTitle"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="8dp"
-                android:background="@drawable/bg_model_pill"
-                android:clickable="true"
-                android:focusable="true"
-                android:foreground="?attr/selectableItemBackground"
-                android:paddingHorizontal="16dp"
-                android:paddingVertical="12dp"
-                android:text="💡 What is the difference between Gen AI and Agentic AI?"
+                android:layout_marginTop="14dp"
+                android:gravity="center"
+                android:text="How can I assist you today?"
                 android:textColor="@color/text_primary"
-                android:textSize="13sp" />
+                android:textSize="20sp"
+                android:textStyle="bold" />
 
             <TextView
-                android:id="@+id/chipSuggest2"
-                android:layout_width="match_parent"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="8dp"
-                android:background="@drawable/bg_model_pill"
-                android:clickable="true"
-                android:focusable="true"
-                android:foreground="?attr/selectableItemBackground"
-                android:paddingHorizontal="16dp"
-                android:paddingVertical="12dp"
-                android:text="⏰ Remind me to review my tasks tomorrow at 5pm"
-                android:textColor="@color/text_primary"
+                android:layout_marginTop="6dp"
+                android:text="Select a prompt or ask anything below:"
+                android:textColor="@color/text_secondary"
                 android:textSize="13sp" />
 
-            <TextView
-                android:id="@+id/chipSuggest3"
+            <!-- 4 Vector-Icon Suggestion Cards -->
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="8dp"
-                android:background="@drawable/bg_model_pill"
-                android:clickable="true"
-                android:focusable="true"
-                android:foreground="?attr/selectableItemBackground"
-                android:paddingHorizontal="16dp"
-                android:paddingVertical="12dp"
-                android:text="📝 Take a note: Key ideas from today\'s meeting"
-                android:textColor="@color/text_primary"
-                android:textSize="13sp" />
+                android:layout_marginTop="20dp"
+                android:orientation="vertical">
 
-            <TextView
-                android:id="@+id/chipSuggest4"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:background="@drawable/bg_model_pill"
-                android:clickable="true"
-                android:focusable="true"
-                android:foreground="?attr/selectableItemBackground"
-                android:paddingHorizontal="16dp"
-                android:paddingVertical="12dp"
-                android:text="✅ Add task: Prepare project submission with high priority"
-                android:textColor="@color/text_primary"
-                android:textSize="13sp" />
+                <TextView
+                    android:id="@+id/chipSuggest1"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="10dp"
+                    android:background="@drawable/bg_model_pill"
+                    android:clickable="true"
+                    android:drawablePadding="12dp"
+                    android:focusable="true"
+                    android:foreground="?attr/selectableItemBackground"
+                    android:gravity="center_vertical"
+                    android:minHeight="48dp"
+                    android:paddingHorizontal="16dp"
+                    android:paddingVertical="12dp"
+                    android:text="What is the difference between Gen AI and Agentic AI?"
+                    android:textColor="@color/text_primary"
+                    android:textSize="14sp"
+                    app:drawableStartCompat="@drawable/ic_sparkle"
+                    app:drawableTint="@color/electric_cyan" />
+
+                <TextView
+                    android:id="@+id/chipSuggest2"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="10dp"
+                    android:background="@drawable/bg_model_pill"
+                    android:clickable="true"
+                    android:drawablePadding="12dp"
+                    android:focusable="true"
+                    android:foreground="?attr/selectableItemBackground"
+                    android:gravity="center_vertical"
+                    android:minHeight="48dp"
+                    android:paddingHorizontal="16dp"
+                    android:paddingVertical="12dp"
+                    android:text="Remind me to review my tasks tomorrow at 5pm"
+                    android:textColor="@color/text_primary"
+                    android:textSize="14sp"
+                    app:drawableStartCompat="@drawable/ic_time"
+                    app:drawableTint="@color/priority_medium" />
+
+                <TextView
+                    android:id="@+id/chipSuggest3"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="10dp"
+                    android:background="@drawable/bg_model_pill"
+                    android:clickable="true"
+                    android:drawablePadding="12dp"
+                    android:focusable="true"
+                    android:foreground="?attr/selectableItemBackground"
+                    android:gravity="center_vertical"
+                    android:minHeight="48dp"
+                    android:paddingHorizontal="16dp"
+                    android:paddingVertical="12dp"
+                    android:text="Take a note: Key ideas from today's meeting"
+                    android:textColor="@color/text_primary"
+                    android:textSize="14sp"
+                    app:drawableStartCompat="@drawable/ic_notes"
+                    app:drawableTint="@color/cyber_violet" />
+
+                <TextView
+                    android:id="@+id/chipSuggest4"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/bg_model_pill"
+                    android:clickable="true"
+                    android:drawablePadding="12dp"
+                    android:focusable="true"
+                    android:foreground="?attr/selectableItemBackground"
+                    android:gravity="center_vertical"
+                    android:minHeight="48dp"
+                    android:paddingHorizontal="16dp"
+                    android:paddingVertical="12dp"
+                    android:text="Add task: Prepare project submission with high priority"
+                    android:textColor="@color/text_primary"
+                    android:textSize="14sp"
+                    app:drawableStartCompat="@drawable/ic_tasks"
+                    app:drawableTint="@color/priority_low" />
+            </LinearLayout>
         </LinearLayout>
-    </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
 
     <!-- Optional Image Attachment Preview -->
     <LinearLayout
@@ -131,14 +162,16 @@
         android:layout_height="wrap_content"
         android:background="@color/surface_dark"
         android:orientation="horizontal"
-        android:padding="8dp"
+        android:paddingHorizontal="12dp"
+        android:paddingVertical="8dp"
         android:visibility="gone"
-        app:layout_constraintBottom_toTopOf="@id/inputBar">
+        app:layout_constraintBottom_toTopOf="@id/inputBarDivider">
 
         <ImageView
             android:id="@+id/imgAttachedPreview"
             android:layout_width="50dp"
             android:layout_height="50dp"
+            android:contentDescription="Attached image preview"
             android:scaleType="centerCrop" />
 
         <TextView
@@ -146,22 +179,30 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_gravity="center_vertical"
-            android:layout_marginStart="8dp"
+            android:layout_marginStart="10dp"
             android:layout_weight="1"
             android:text="Attached Image"
             android:textColor="@color/text_primary"
-            android:textSize="12sp" />
+            android:textSize="13sp" />
 
         <ImageView
             android:id="@+id/btnRemoveImage"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
             android:layout_gravity="center_vertical"
             android:background="?attr/selectableItemBackgroundBorderless"
-            android:padding="6dp"
-            android:src="@drawable/ic_delete"
+            android:contentDescription="Remove attached image"
+            android:padding="10dp"
+            android:src="@drawable/ic_close"
             app:tint="@color/priority_high" />
     </LinearLayout>
+
+    <View
+        android:id="@+id/inputBarDivider"
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="@color/divider"
+        app:layout_constraintBottom_toTopOf="@id/inputBar" />
 
     <!-- Bottom Chat Input Bar -->
     <LinearLayout
@@ -171,17 +212,18 @@
         android:background="@color/surface_dark"
         android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:paddingHorizontal="10dp"
+        android:paddingHorizontal="8dp"
         android:paddingVertical="8dp"
         app:layout_constraintBottom_toBottomOf="parent">
 
         <!-- Attach Image Button -->
         <ImageView
             android:id="@+id/btnAttachImage"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
             android:background="?attr/selectableItemBackgroundBorderless"
-            android:padding="8dp"
+            android:contentDescription="Attach image"
+            android:padding="10dp"
             android:src="@drawable/ic_image"
             app:tint="@color/text_secondary" />
 
@@ -189,7 +231,7 @@
         <FrameLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginHorizontal="6dp"
+            android:layout_marginHorizontal="4dp"
             android:layout_weight="1"
             android:background="@drawable/bg_input_box">
 
@@ -201,38 +243,45 @@
                 android:hint="@string/chat_hint"
                 android:inputType="textCapSentences|textMultiLine"
                 android:maxLines="4"
+                android:minHeight="44dp"
                 android:paddingHorizontal="14dp"
                 android:paddingVertical="10dp"
                 android:textColor="@color/text_primary"
                 android:textColorHint="@color/text_muted"
-                android:textSize="14sp" />
+                android:textSize="15sp" />
         </FrameLayout>
 
         <!-- Voice Mic Button -->
         <ImageView
             android:id="@+id/btnVoiceMic"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
             android:background="?attr/selectableItemBackgroundBorderless"
-            android:padding="8dp"
+            android:contentDescription="@string/voice_input"
+            android:padding="10dp"
             android:src="@drawable/ic_mic"
             app:tint="@color/text_secondary" />
 
-        <!-- Send Button -->
+        <!-- Send / Stop Button -->
         <FrameLayout
             android:id="@+id/btnSend"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:layout_marginStart="4dp"
-            android:background="@drawable/bg_badge_free"
-            android:backgroundTint="@color/accent_gemini_blue">
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:layout_marginStart="2dp"
+            android:background="@drawable/bg_send_button"
+            android:clickable="true"
+            android:contentDescription="@string/send"
+            android:focusable="true"
+            android:foreground="?attr/selectableItemBackgroundBorderless">
 
             <ImageView
+                android:id="@+id/imgSendIcon"
                 android:layout_width="20dp"
                 android:layout_height="20dp"
                 android:layout_gravity="center"
+                android:importantForAccessibility="no"
                 android:src="@drawable/ic_send"
-                app:tint="@color/white" />
+                app:tint="@color/on_electric_cyan" />
         </FrameLayout>
 
     </LinearLayout>

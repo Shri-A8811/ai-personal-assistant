@@ -27,10 +27,10 @@
 
             <View
                 android:id="@+id/noteColorDot"
-                android:layout_width="8dp"
-                android:layout_height="8dp"
-                android:layout_marginEnd="8dp"
-                android:background="@drawable/bg_model_pill"
+                android:layout_width="10dp"
+                android:layout_height="10dp"
+                android:layout_marginEnd="10dp"
+                android:background="@drawable/bg_send_button"
                 android:backgroundTint="@color/electric_cyan" />
 
             <ImageView
@@ -38,7 +38,8 @@
                 android:layout_width="18dp"
                 android:layout_height="18dp"
                 android:layout_marginEnd="6dp"
-                android:src="@drawable/ic_pin"
+                android:contentDescription="Pinned note"
+                android:src="@drawable/ic_pin_filled"
                 android:visibility="gone"
                 app:tint="@color/electric_cyan" />
 
@@ -55,10 +56,11 @@
 
             <ImageView
                 android:id="@+id/btnDeleteNote"
-                android:layout_width="28dp"
-                android:layout_height="28dp"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
                 android:background="?attr/selectableItemBackgroundBorderless"
-                android:padding="5dp"
+                android:contentDescription="Delete note"
+                android:padding="10dp"
                 android:src="@drawable/ic_delete"
                 app:tint="@color/text_muted" />
         </LinearLayout>
@@ -68,18 +70,18 @@
             android:id="@+id/txtNoteContent"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"
+            android:layout_marginTop="4dp"
             android:ellipsize="end"
-            android:lineSpacingExtra="2dp"
+            android:lineSpacingMultiplier="1.2"
             android:maxLines="3"
             android:textColor="@color/text_secondary"
-            android:textSize="13sp" />
+            android:textSize="14sp" />
 
         <!-- Footer / AI Actions -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
+            android:layout_marginTop="12dp"
             android:gravity="center_vertical"
             android:orientation="horizontal">
 
@@ -89,32 +91,40 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:textColor="@color/text_muted"
-                android:textSize="11sp" />
+                android:textSize="12sp" />
 
-            <!-- One-tap AI action chips -->
+            <!-- One-tap AI action pills -->
             <TextView
                 android:id="@+id/chipAiSummarize"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:background="@drawable/bg_model_pill"
-                android:paddingHorizontal="8dp"
-                android:paddingVertical="4dp"
+                android:backgroundTint="@color/tint_cyan_bg"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?attr/selectableItemBackground"
+                android:paddingHorizontal="12dp"
+                android:paddingVertical="7dp"
                 android:text="@string/ai_summarize"
                 android:textColor="@color/accent_gemini_blue"
-                android:textSize="11sp"
+                android:textSize="12sp"
                 android:textStyle="bold" />
 
             <TextView
                 android:id="@+id/chipAiTasks"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="6dp"
+                android:layout_marginStart="8dp"
                 android:background="@drawable/bg_model_pill"
-                android:paddingHorizontal="8dp"
-                android:paddingVertical="4dp"
+                android:backgroundTint="@color/tint_indigo_bg"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?attr/selectableItemBackground"
+                android:paddingHorizontal="12dp"
+                android:paddingVertical="7dp"
                 android:text="@string/ai_extract_tasks"
-                android:textColor="@color/accent_sparkle"
-                android:textSize="11sp"
+                android:textColor="@color/cyber_violet"
+                android:textSize="12sp"
                 android:textStyle="bold" />
         </LinearLayout>
 

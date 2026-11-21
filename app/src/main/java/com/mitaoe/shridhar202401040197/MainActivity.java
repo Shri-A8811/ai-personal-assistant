@@ -11,6 +11,7 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.activity.OnBackPressedCallback;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
@@ -20,7 +21,10 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
+import androidx.fragment.app.DialogFragment;
 import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentTransaction;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -62,6 +66,7 @@ public class MainActivity extends AppCompatActivity {
     private LinearLayout btnDrawerSettings;
     private ConversationDrawerAdapter drawerAdapter;
 
+    private static final String KEY_CURRENT_TAB = "key_current_tab";
     private String currentTab = "";
 
     private final ActivityResultLauncher<String> notificationPermissionLauncher =
@@ -139,12 +144,62 @@ public class MainActivity extends AppCompatActivity {
             return false;
         });
 
-        // Default screen is Chat
+        // Default or restored tab state
         if (savedInstanceState == null) {
             switchTab("chat");
+        } else {
+            currentTab = savedInstanceState.getString(KEY_CURRENT_TAB, "chat");
+            restoreVisibleFragmentAndTopBar(currentTab);
         }
 
+        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                if (drawerLayout != null && drawerLayout.isDrawerOpen(GravityCompat.START)) {
+                    drawerLayout.closeDrawer(GravityCompat.START);
+                } else if (!"chat".equals(currentTab) && bottomNav != null) {
+                    bottomNav.setSelectedItemId(R.id.nav_chat);
+                } else {
+                    setEnabled(false);
+                    getOnBackPressedDispatcher().onBackPressed();
+                }
+            }
+        });
+
         checkNotificationPermission();
+    }
+
+    @Override
+    protected void onSaveInstanceState(@NonNull Bundle outState) {
+        super.onSaveInstanceState(outState);
+        outState.putString(KEY_CURRENT_TAB, currentTab);
+    }
+
+    private void restoreVisibleFragmentAndTopBar(String activeTag) {
+        boolean isChat = "chat".equals(activeTag);
+        if (btnModelPill != null) btnModelPill.setVisibility(isChat ? View.VISIBLE : View.GONE);
+        if (btnTopNewChat != null) btnTopNewChat.setVisibility(isChat ? View.VISIBLE : View.GONE);
+
+        FragmentManager fm = getSupportFragmentManager();
+        FragmentTransaction tx = fm.beginTransaction();
+        boolean changed = false;
+        for (Fragment f : fm.getFragments()) {
+            if (f == null || f instanceof DialogFragment) continue;
+            if (activeTag.equals(f.getTag())) {
+                if (f.isHidden()) {
+                    tx.show(f);
+                    changed = true;
+                }
+            } else {
+                if (!f.isHidden()) {
+                    tx.hide(f);
+                    changed = true;
+                }
+            }
+        }
+        if (changed) {
+            tx.commitAllowingStateLoss();
+        }
     }
 
     private void setupDrawer() {
@@ -183,7 +238,10 @@ public class MainActivity extends AppCompatActivity {
                             });
                             Fragment frag = getSupportFragmentManager().findFragmentByTag("chat");
                             if (frag instanceof ChatFragment) {
-                                ((ChatFragment) frag).startNewChat();
+                                ChatFragment chatFrag = (ChatFragment) frag;
+                                if (chatFrag.getCurrentConversationId() == conversation.getId()) {
+                                    chatFrag.startNewChat();
+                                }
                             }
                         })
                         .setNegativeButton("Cancel", null)
@@ -252,6 +310,17 @@ public class MainActivity extends AppCompatActivity {
         if (txtDrawerUserEmail != null) {
             txtDrawerUserEmail.setText(prefManager.getUserEmail());
         }
+        updateDrawerPinnedBadge();
+    }
+
+    private void updateDrawerPinnedBadge() {
+        View drawerHeader = findViewById(R.id.drawerContent);
+        if (drawerHeader == null) return;
+        TextView txtBadge = drawerHeader.findViewById(R.id.txtDrawerPinnedBadge);
+        if (txtBadge != null && prefManager != null) {
+            int count = prefManager.getPinnedModels().size();
+            txtBadge.setText(count + " pinned");
+        }
     }
 
     @Override
@@ -279,6 +348,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void switchTab(String tag) {
         if (tag.equals(currentTab)) return;
+        if (isFinishing() || isDestroyed()) return;
 
         androidx.fragment.app.FragmentManager fm = getSupportFragmentManager();
         androidx.fragment.app.FragmentTransaction transaction = fm.beginTransaction();
@@ -302,7 +372,7 @@ public class MainActivity extends AppCompatActivity {
             transaction.show(targetFrag);
         }
 
-        transaction.commit();
+        transaction.commitAllowingStateLoss();
         currentTab = tag;
     }
 
@@ -313,6 +383,16 @@ public class MainActivity extends AppCompatActivity {
         } else {
             txtCurrentModel.setText("Select Model / Add API");
         }
+        updateDrawerPinnedBadge();
+    }
+
+    private void safeShowDialog(DialogFragment dialog, String tag) {
+        if (isFinishing() || isDestroyed()) return;
+        FragmentManager fm = getSupportFragmentManager();
+        if (fm.isStateSaved() || fm.findFragmentByTag(tag) != null) return;
+        try {
+            dialog.show(fm, tag);
+        } catch (IllegalStateException ignored) {}
     }
 
     public void showModelSelectorBottomSheet() {
@@ -336,7 +416,7 @@ public class MainActivity extends AppCompatActivity {
                 showModelLibraryBottomSheet();
             }
         });
-        sheet.show(getSupportFragmentManager(), "ModelSelectorSheet");
+        safeShowDialog(sheet, "ModelSelectorSheet");
     }
 
     public void showModelLibraryBottomSheet() {
@@ -358,7 +438,7 @@ public class MainActivity extends AppCompatActivity {
                 updateModelPillLabel();
             }
         });
-        sheet.show(getSupportFragmentManager(), "ModelLibrarySheet");
+        safeShowDialog(sheet, "ModelLibrarySheet");
     }
 
     public void showSettingsBottomSheet() {
@@ -366,7 +446,7 @@ public class MainActivity extends AppCompatActivity {
         sheet.setOnSettingsSavedListener(() -> {
             updateModelPillLabel();
         });
-        sheet.show(getSupportFragmentManager(), "SettingsSheet");
+        safeShowDialog(sheet, "SettingsSheet");
     }
 
     private void checkNotificationPermission() {

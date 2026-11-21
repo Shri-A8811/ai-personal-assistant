@@ -14,18 +14,29 @@
         android:orientation="horizontal"
         android:padding="12dp">
 
+        <!-- Vertical Priority Accent Strip -->
+        <View
+            android:id="@+id/viewPriorityStrip"
+            android:layout_width="4dp"
+            android:layout_height="42dp"
+            android:layout_marginEnd="8dp"
+            android:background="@drawable/bg_badge_free"
+            android:backgroundTint="@color/priority_medium" />
+
         <!-- Checkbox -->
         <CheckBox
             android:id="@+id/checkTaskCompleted"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:buttonTint="@color/accent_gemini_blue" />
+            android:buttonTint="@color/accent_gemini_blue"
+            android:minWidth="48dp"
+            android:minHeight="48dp" />
 
         <!-- Task Content -->
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
+            android:layout_marginStart="4dp"
             android:layout_weight="1"
             android:orientation="vertical">
 
@@ -42,8 +53,8 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="2dp"
-                android:textColor="@color/text_muted"
-                android:textSize="12sp"
+                android:textColor="@color/text_secondary"
+                android:textSize="13sp"
                 android:visibility="gone" />
 
             <!-- Badges Row -->
@@ -60,7 +71,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:background="@drawable/bg_badge_free"
-                    android:paddingHorizontal="6dp"
+                    android:paddingHorizontal="7dp"
                     android:paddingVertical="2dp"
                     android:text="MED"
                     android:textColor="@color/white"
@@ -74,11 +85,11 @@
                     android:layout_height="wrap_content"
                     android:layout_marginStart="6dp"
                     android:background="@drawable/bg_badge_free"
-                    android:backgroundTint="@color/accent_gemini_blue"
-                    android:paddingHorizontal="6dp"
+                    android:backgroundTint="@color/tint_cyan_bg"
+                    android:paddingHorizontal="7dp"
                     android:paddingVertical="2dp"
-                    android:text="🔁 Daily"
-                    android:textColor="@color/white"
+                    android:text="Daily"
+                    android:textColor="@color/electric_cyan"
                     android:textSize="10sp"
                     android:textStyle="bold"
                     android:visibility="gone" />
@@ -90,7 +101,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginStart="8dp"
                     android:textColor="@color/text_secondary"
-                    android:textSize="11sp" />
+                    android:textSize="12sp" />
 
                 <!-- Reminder Icon -->
                 <ImageView
@@ -98,6 +109,7 @@
                     android:layout_width="14dp"
                     android:layout_height="14dp"
                     android:layout_marginStart="6dp"
+                    android:contentDescription="Has scheduled reminder"
                     android:src="@drawable/ic_time"
                     android:visibility="gone"
                     app:tint="@color/accent_gemini_blue" />
@@ -108,10 +120,11 @@
         <!-- Delete Task Button -->
         <ImageView
             android:id="@+id/btnDeleteTask"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
             android:background="?attr/selectableItemBackgroundBorderless"
-            android:padding="6dp"
+            android:contentDescription="Delete task"
+            android:padding="10dp"
             android:src="@drawable/ic_delete"
             app:tint="@color/text_muted" />
 

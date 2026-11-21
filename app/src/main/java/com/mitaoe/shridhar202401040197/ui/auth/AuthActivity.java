@@ -78,8 +78,14 @@ public class AuthActivity extends AppCompatActivity {
         btnSubmitAuth.setOnClickListener(v -> handleSubmit());
 
         if (btnGuestMode != null) {
+            // Guest mode is turned off once an account exists; otherwise it bypasses the password.
+            btnGuestMode.setVisibility(prefManager.hasAccount() ? View.GONE : View.VISIBLE);
             btnGuestMode.setOnClickListener(v -> {
-                prefManager.setGuestSession();
+                if (!prefManager.setGuestSession()) {
+                    Toast.makeText(this, "Guest mode is unavailable because an account exists. Please sign in.", Toast.LENGTH_LONG).show();
+                    btnGuestMode.setVisibility(View.GONE);
+                    return;
+                }
                 Toast.makeText(this, "Welcome! Using local Guest session.", Toast.LENGTH_SHORT).show();
                 launchMainActivity();
             });
@@ -129,7 +135,14 @@ public class AuthActivity extends AppCompatActivity {
         }
 
         if (isSignUpMode) {
-            prefManager.saveUser(name, email, password);
+            if (!prefManager.saveUser(name, email, password)) {
+                Toast.makeText(this, "An account already exists on this device. Please sign in.", Toast.LENGTH_LONG).show();
+                TabLayout.Tab loginTab = tabAuthMode.getTabAt(1);
+                if (loginTab != null) {
+                    loginTab.select();
+                }
+                return;
+            }
             Toast.makeText(this, "Welcome, " + name + "! Account created.", Toast.LENGTH_SHORT).show();
             launchMainActivity();
         } else {

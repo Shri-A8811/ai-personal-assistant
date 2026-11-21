@@ -1,5 +1,6 @@
 package com.mitaoe.shridhar202401040197.ui.chat;
 
+import android.content.Context;
 import android.os.Bundle;
 import android.util.TypedValue;
 import android.view.LayoutInflater;
@@ -130,12 +131,13 @@ public class ModelSelectorBottomSheet extends BottomSheetDialogFragment {
         @Override
         public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
             AiModel model = models.get(position);
+            Context itemCtx = holder.itemView.getContext();
             holder.txtTitle.setText(model.getDisplayName());
             holder.txtProviderBadge.setText(model.getProvider().toUpperCase());
             holder.txtSubtitle.setText(model.getId());
 
-            // Provider Icon / Emoji
-            holder.txtProviderIcon.setText(getProviderEmoji(model.getProvider()));
+            // Crisp 2-letter provider monogram instead of raw emoji
+            holder.txtProviderIcon.setText(getProviderMonogram(model.getProvider()));
 
             // Free badge
             holder.badgeFree.setVisibility(model.isFree() ? View.VISIBLE : View.GONE);
@@ -143,14 +145,14 @@ public class ModelSelectorBottomSheet extends BottomSheetDialogFragment {
             // Active model highlight (electric blue glow border + checkmark)
             boolean isSelected = model.getId().equalsIgnoreCase(prefManager.getActiveModelId());
             if (isSelected) {
-                int strokeColor = ContextCompat.getColor(requireContext(), R.color.accent_gemini_blue);
-                int strokeWidth = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 2, getResources().getDisplayMetrics());
+                int strokeColor = ContextCompat.getColor(itemCtx, R.color.accent_gemini_blue);
+                int strokeWidth = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 2, itemCtx.getResources().getDisplayMetrics());
                 holder.card.setStrokeColor(strokeColor);
                 holder.card.setStrokeWidth(strokeWidth);
                 holder.imgSelectedCheck.setVisibility(View.VISIBLE);
             } else {
-                int strokeColor = ContextCompat.getColor(requireContext(), R.color.card_stroke_dark);
-                int strokeWidth = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 1, getResources().getDisplayMetrics());
+                int strokeColor = ContextCompat.getColor(itemCtx, R.color.card_stroke_dark);
+                int strokeWidth = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 1, itemCtx.getResources().getDisplayMetrics());
                 holder.card.setStrokeColor(strokeColor);
                 holder.card.setStrokeWidth(strokeWidth);
                 holder.imgSelectedCheck.setVisibility(View.GONE);
@@ -161,14 +163,14 @@ public class ModelSelectorBottomSheet extends BottomSheetDialogFragment {
                 prefManager.setActiveProvider(model.getProvider());
                 prefManager.setActiveModelId(model.getId());
                 prefManager.setActiveModelName(model.getDisplayName());
-                Toast.makeText(requireContext(), "Switched to " + model.getDisplayName(), Toast.LENGTH_SHORT).show();
+                Toast.makeText(itemCtx, "Switched to " + model.getDisplayName(), Toast.LENGTH_SHORT).show();
                 if (listener != null) {
                     listener.onModelSelected(model);
                 }
-                dismiss();
+                if (isAdded()) dismissAllowingStateLoss();
             });
 
-            // One-tap remove / unpin button (✕)
+            // One-tap remove / unpin button
             holder.btnRemoveModel.setOnClickListener(v -> {
                 int currentPos = holder.getBindingAdapterPosition();
                 if (currentPos == RecyclerView.NO_POSITION) return;
@@ -193,7 +195,7 @@ public class ModelSelectorBottomSheet extends BottomSheetDialogFragment {
                     }
                 }
 
-                Toast.makeText(requireContext(), "Removed " + removed.getDisplayName(), Toast.LENGTH_SHORT).show();
+                Toast.makeText(itemCtx, "Removed " + removed.getDisplayName(), Toast.LENGTH_SHORT).show();
 
                 if (models.isEmpty()) {
                     recycler.setVisibility(View.GONE);
@@ -204,19 +206,19 @@ public class ModelSelectorBottomSheet extends BottomSheetDialogFragment {
             });
         }
 
-        private String getProviderEmoji(String provider) {
-            if (provider == null) return "✨";
+        private String getProviderMonogram(String provider) {
+            if (provider == null) return "AI";
             switch (provider.toLowerCase()) {
-                case "openrouter": return "🌐";
-                case "groq": return "⚡";
-                case "gemini": return "✨";
-                case "deepseek": return "🧠";
-                case "xai": return "🚀";
-                case "anthropic": return "🎭";
-                case "openai": return "🤖";
-                case "fireworks": return "🎆";
-                case "custom": return "⚙️";
-                default: return "🤖";
+                case "openrouter": return "OR";
+                case "groq": return "GQ";
+                case "gemini": return "GM";
+                case "deepseek": return "DS";
+                case "xai": return "xA";
+                case "anthropic": return "AN";
+                case "openai": return "OA";
+                case "fireworks": return "FW";
+                case "custom": return "CU";
+                default: return "AI";
             }
         }
 

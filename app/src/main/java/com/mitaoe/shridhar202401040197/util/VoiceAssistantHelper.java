@@ -33,30 +33,47 @@ public class VoiceAssistantHelper {
     }
 
     private void initTts() {
-        textToSpeech = new TextToSpeech(context, status -> {
-            if (status == TextToSpeech.SUCCESS) {
-                int result = textToSpeech.setLanguage(Locale.getDefault());
-                if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
-                    textToSpeech.setLanguage(Locale.US);
+        try {
+            textToSpeech = new TextToSpeech(context, status -> {
+                try {
+                    if (status == TextToSpeech.SUCCESS) {
+                        int result = textToSpeech.setLanguage(Locale.getDefault());
+                        if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
+                            textToSpeech.setLanguage(Locale.US);
+                        }
+                        isTtsInitialized = true;
+                    } else {
+                        Log.e(TAG, "TTS Initialization failed with status: " + status);
+                    }
+                } catch (Exception e) {
+                    Log.e(TAG, "Exception during TTS language configuration", e);
                 }
-                isTtsInitialized = true;
-            } else {
-                Log.e(TAG, "TTS Initialization failed");
-            }
-        });
+            });
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to instantiate TextToSpeech", e);
+            textToSpeech = null;
+        }
     }
 
     public void speak(String text) {
-        if (textToSpeech != null && isTtsInitialized && text != null && !text.isEmpty()) {
-            // Strip markdown asterisks and backticks for clean natural speech
-            String cleanText = text.replaceAll("[*#`_~]", "");
-            textToSpeech.speak(cleanText, TextToSpeech.QUEUE_FLUSH, null, "UTTERANCE_ID");
+        try {
+            if (textToSpeech != null && isTtsInitialized && text != null && !text.isEmpty()) {
+                // Strip markdown asterisks and backticks for clean natural speech
+                String cleanText = text.replaceAll("[*#`_~]", "");
+                textToSpeech.speak(cleanText, TextToSpeech.QUEUE_FLUSH, null, "UTTERANCE_ID");
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Exception during TTS speak", e);
         }
     }
 
     public void stopSpeaking() {
-        if (textToSpeech != null && textToSpeech.isSpeaking()) {
-            textToSpeech.stop();
+        try {
+            if (textToSpeech != null && textToSpeech.isSpeaking()) {
+                textToSpeech.stop();
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Exception during TTS stop", e);
         }
     }
 
@@ -99,8 +116,14 @@ public class VoiceAssistantHelper {
                 String errorMsg = "Voice recognition error (" + error + ")";
                 if (error == SpeechRecognizer.ERROR_NO_MATCH) {
                     errorMsg = "No speech detected. Please try again.";
-                } else if (error == SpeechRecognizer.ERROR_NETWORK) {
+                } else if (error == SpeechRecognizer.ERROR_NETWORK || error == SpeechRecognizer.ERROR_NETWORK_TIMEOUT) {
                     errorMsg = "Network error during speech recognition.";
+                } else if (error == SpeechRecognizer.ERROR_SPEECH_TIMEOUT) {
+                    errorMsg = "No speech input detected within timeout.";
+                } else if (error == SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS) {
+                    errorMsg = "Microphone permission required for voice input.";
+                } else if (error == SpeechRecognizer.ERROR_AUDIO) {
+                    errorMsg = "Audio recording error. Please check your microphone.";
                 }
                 callback.onSpeechError(errorMsg);
             }
@@ -133,12 +156,16 @@ public class VoiceAssistantHelper {
 
     public void destroy() {
         if (speechRecognizer != null) {
-            speechRecognizer.destroy();
+            try {
+                speechRecognizer.destroy();
+            } catch (Exception ignored) {}
             speechRecognizer = null;
         }
         if (textToSpeech != null) {
-            textToSpeech.stop();
-            textToSpeech.shutdown();
+            try {
+                textToSpeech.stop();
+                textToSpeech.shutdown();
+            } catch (Exception ignored) {}
             textToSpeech = null;
         }
     }
